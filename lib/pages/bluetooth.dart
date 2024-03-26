@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -11,21 +14,36 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class BluetoothPageState extends State<BluetoothPage> {
-  final List<BluetoothDevice> devicesList = [];
+  final List<BluetoothDevice> knownDevices = [];
+  final TextEditingController _controller = TextEditingController();
 
-  static const platform = MethodChannel('org.katapp.flutter_p2p_demo/advertising');
+  final List<String> appData = [];
+  int activeConnections = 0;
+
+  Timer? updateTimer;
+
+  static const platform =
+      MethodChannel('org.katapp.flutter_p2p_demo/advertising');
   final Guid serviceUUID = Guid('c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81');
+  final Guid characteristicUUID = Guid('5e6525b1-4a90-4baf-a4a1-9b4a53641970');
 
   @override
   void initState() {
     super.initState();
     initiateBluetooth();
+
+    // every 2 sec update the active connections
+    updateTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      updateActiveConnections();
+    });
   }
 
   @override
   void dispose() {
     FlutterBluePlus.stopScan(); // Updated variable
-    stopAdvertising();
+    stopGattServer();
+    updateTimer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -43,34 +61,120 @@ class BluetoothPageState extends State<BluetoothPage> {
       if (results.isNotEmpty) {
         ScanResult result = results.last;
 
-        print('Device found: ${result.device.advName}');
+        if (!result.device.isConnected) {
+          result.device.connect();
+          getAllDataFromNewDevice(result.device);
 
-        if (!devicesList.contains(result.device)) {
-          setState(() {
-            devicesList.add(result.device);
-          });
+          if (!knownDevices.contains(result.device)) {
+            subscribeToDeviceServive(result.device);
+          } else {
+            knownDevices.add(result.device);
+          }
         }
       }
     });
 
     await FlutterBluePlus.startScan(withServices: [serviceUUID]);
 
-    startAdvertising();
+    startGattServer();
   }
 
-  void startAdvertising() async {
+  void startGattServer() async {
     try {
-      await platform.invokeMethod('startBluetoothAdvertising');
+      await platform.invokeMethod('startBluetoothGattServer');
     } on PlatformException catch (e) {
-      print("Failed to start Bluetooth advertising: '${e.message}'.");
+      print("Failed to start Bluetooth GattServer: '${e.message}'.");
     }
   }
 
-  void stopAdvertising() async {
+  void stopGattServer() async {
     try {
-      await platform.invokeMethod('stopBluetoothAdvertising');
+      await platform.invokeMethod('stopBluetoothGattServer');
     } on PlatformException catch (e) {
-      print("Failed to stop Bluetooth advertising: '${e.message}'.");
+      print("Failed to stop Bluetooth GattServer: '${e.message}'.");
+    }
+  }
+
+  void updateActiveConnections() async {
+    setState(() {
+      activeConnections = FlutterBluePlus.connectedDevices.length;
+    });
+  }
+
+  Future<void> subscribeToDeviceServive(BluetoothDevice device) async {
+    //wait until device is connected
+    while (!device.isConnected) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    List<BluetoothService> services = await device.discoverServices();
+    for (BluetoothService service in services) {
+      for (BluetoothCharacteristic characteristic in service.characteristics) {
+        if (characteristic.uuid == characteristicUUID) {
+          await characteristic.setNotifyValue(true);
+          characteristic.onValueReceived.listen((data) {
+            String readableData = utf8.decode(data);
+
+            if (!appData.contains(readableData)) {
+              addData(readableData);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> sendDataToAllDevices(String message) async {
+    List<int> messageBytes =
+        utf8.encode(message); // Convert string to byte array
+
+    for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+      List<BluetoothService> services = await device.discoverServices();
+      for (BluetoothService service in services) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
+          if (characteristic.uuid == characteristicUUID) {
+            try {
+              await characteristic.write(messageBytes, withoutResponse: false);
+              print("Message sent to device ${device.remoteId}");
+            } catch (e) {
+              print("Failed to send message to device ${device.remoteId}: $e");
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> addData(String message) async {
+    // if data in appData return
+    if (appData.contains(message)) {
+      return;
+    }
+
+    setState(() {
+      appData.add(message);
+    });
+    // use platform to update locale data
+    await platform.invokeMethod('updateBluetoothDataList', {'data': message});
+  }
+
+  Future<void> getAllDataFromNewDevice(BluetoothDevice device) async {
+    while (!device.isConnected) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    List<BluetoothService> services = await device.discoverServices();
+    for (BluetoothService service in services) {
+      for (BluetoothCharacteristic characteristic in service.characteristics) {
+        if (characteristic.uuid == characteristicUUID) {
+          List<int> data = await characteristic.read();
+          String readableData = utf8.decode(data);
+          List<String> singleWords = readableData.split(', ');
+          for (String word in singleWords) {
+            addData(word);
+          }
+        }
+      }
     }
   }
 
@@ -80,15 +184,50 @@ class BluetoothPageState extends State<BluetoothPage> {
       appBar: AppBar(
         title: const Text('Bluetooth Page'),
       ),
-      body: ListView.builder(
-        itemCount: devicesList.length,
-        itemBuilder: (BuildContext context, int index) {
-          return ListTile(
-            title: Text(devicesList[index].platformName),
-            subtitle: Text(devicesList[index].remoteId.toString()),
-            onTap: () => {},
-          );
-        },
+      body: Column(
+        children: [
+          // Displaying the number of active connections
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text('Active Connections: $activeConnections'),
+          ),
+          // Displaying messages from "data"
+          Expanded(
+            child: ListView.builder(
+              itemCount: appData.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(appData[index]),
+                );
+              },
+            ),
+          ),
+          // Input and Send button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _controller, // Use the controller here
+                    decoration: const InputDecoration(
+                      hintText: 'Enter some text',
+                      border: OutlineInputBorder(),
+                    ),
+                    // Removed inputFormatters to allow any type of input
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: () {
+                    // Use the text from the controller in addData
+                    addData(_controller.text);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

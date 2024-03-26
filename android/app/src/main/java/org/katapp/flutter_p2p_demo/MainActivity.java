@@ -3,17 +3,18 @@ package org.katapp.flutter_p2p_demo;
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
-import org.katapp.flutter_p2p_demo.BleAdvertisingManager;
 import android.os.Bundle;
+
+import org.katapp.flutter_p2p_demo.BleGattServerManager;
 
 public class MainActivity extends FlutterActivity {
     private static final String CHANNEL = "org.katapp.flutter_p2p_demo/advertising";
-    private BleAdvertisingManager bleAdvertisingManager;
+    private BleGattServerManager bleGattServerManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        bleAdvertisingManager = new BleAdvertisingManager(this);
+        bleGattServerManager = new BleGattServerManager(this);
     }
 
     @Override
@@ -22,12 +23,17 @@ public class MainActivity extends FlutterActivity {
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL)
                 .setMethodCallHandler((call, result) -> {
                     switch (call.method) {
-                        case "startBluetoothAdvertising":
-                            bleAdvertisingManager.startAdvertising();
+                        case "startBluetoothGattServer":
+                            bleGattServerManager.startGattServer();
                             result.success(null);
                             break;
-                        case "stopBluetoothAdvertising":
-                            bleAdvertisingManager.stopAdvertising();
+                        case "stopBluetoothGattServer":
+                            bleGattServerManager.startGattServer();
+                            result.success(null);
+                            break;
+                        case "updateBluetoothDataList":
+                            String data = call.argument("data");
+                            bleGattServerManager.updateDataList(data);
                             result.success(null);
                             break;
                         default:
