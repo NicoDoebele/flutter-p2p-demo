@@ -1,4 +1,6 @@
 {
     "cmake.sourceDirectory": "C:/Users/nicod/OneDrive/Desktop/prototype/flutter-p2p-demo/windows/flutter",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.project.sourcePaths": [],
+    "java.compile.nullAnalysis.mode": "automatic"
 }

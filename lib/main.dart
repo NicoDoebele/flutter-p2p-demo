@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_p2p_demo/pages/bluetooth.dart';
+import 'package:flutter_p2p_demo/pages/wifidirect.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,14 +32,32 @@ class MainPage extends StatelessWidget {
         title: const Text('Main Page'),
       ),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const BluetoothPage()),
-            );
-          },
-          child: const Text('Go to Bluetooth Page'),
+        child: Column(
+          mainAxisSize:
+              MainAxisSize.min, // This centers the buttons vertically.
+          children: <Widget>[
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const BluetoothPage()),
+                );
+              },
+              child: const Text('Go to Bluetooth Page'),
+            ),
+            const SizedBox(height: 20), // Adds space between the two buttons.
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const WiFiDirectPage()),
+                );
+              },
+              child: const Text('Go to WiFi Direct Page'),
+            ),
+          ],
         ),
       ),
     );

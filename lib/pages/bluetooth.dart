@@ -151,6 +151,8 @@ class BluetoothPageState extends State<BluetoothPage> {
       return;
     }
 
+    _controller.clear();
+
     setState(() {
       appData.add(message);
     });
