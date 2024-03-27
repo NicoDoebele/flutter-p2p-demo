@@ -21,6 +21,8 @@ import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.net.wifi.p2p.WifiP2pManager.DnsSdServiceResponseListener;
 import android.net.wifi.p2p.WifiP2pManager.DnsSdTxtRecordListener;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
+import android.net.wifi.p2p.WifiP2pManager.ActionListener;
+import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 
 public class WiFiDirectManager {
     WifiP2pManager manager;
@@ -28,8 +30,10 @@ public class WiFiDirectManager {
     BroadcastReceiver receiver;
     IntentFilter intentFilter;
     Context context;
+    WifiP2pDnsSdServiceRequest serviceRequest;
 
     private List<WifiP2pDevice> peers = new ArrayList<>();
+    private final Map<String, WifiP2pDevice> deviceMap = new HashMap<>();
 
     public WiFiDirectManager(Context context) {
         this.context = context;
@@ -38,6 +42,9 @@ public class WiFiDirectManager {
     public void init(Bundle savedInstanceState) {
         manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(context, Looper.getMainLooper(), null);
+
+        registerService();
+        setupServiceDiscovery();
 
         intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
@@ -49,6 +56,68 @@ public class WiFiDirectManager {
         context.registerReceiver(receiver, intentFilter);
 
         Log.d("WiFiDirectActivity", "WiFi Direct initialized");
+    }
+
+    private void registerService() {
+        Map<String, String> record = new HashMap();
+        record.put("listeningPort", "8888");
+        WifiP2pDnsSdServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
+                "_katappwifidirectservice", "_presence._tcp", record);
+
+        manager.addLocalService(channel, serviceInfo, new ActionListener() {
+            @Override
+            public void onSuccess() {
+                Log.d("WiFiDirectActivity", "Local Service Added");
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Log.d("WiFiDirectActivity", "Failed to add a service");
+            }
+        });
+
+        serviceRequest = WifiP2pDnsSdServiceRequest.newInstance();
+        manager.addServiceRequest(channel,
+                serviceRequest,
+                new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d("WiFiDirectActivity", "Added service discovery request");
+                    }
+
+                    @Override
+                    public void onFailure(int code) {
+                        Log.d("WiFiDirectActivity", "Failed adding service discovery request");
+                    }
+                });
+    }
+
+    private void setupServiceDiscovery() {
+        DnsSdTxtRecordListener txtListener = new DnsSdTxtRecordListener() {
+            @Override
+            public void onDnsSdTxtRecordAvailable(
+                    String fullDomainName, Map<String, String> record, WifiP2pDevice device) {
+                Log.d("WiFiDirectActivity", "DnsSdTxtRecord available -" + record.toString());
+                if ("_katapp._tcp".equals(fullDomainName)) {
+                    deviceMap.put(device.deviceAddress, device);
+                }
+            }
+        };
+
+        DnsSdServiceResponseListener servListener = new DnsSdServiceResponseListener() {
+            @Override
+            public void onDnsSdServiceAvailable(String instanceName, String registrationType,
+                    WifiP2pDevice device) {
+                if (instanceName.equalsIgnoreCase("_katappwifidirectservice")) {
+                    deviceMap.put(device.deviceAddress, device);
+                    if (!peers.contains(device))
+                        peers.add(device); // if Service is found later than peer add manually
+                    Log.d("WiFiDirectActivity", "Service discovery success, added peer: " + device.deviceName);
+                }
+            }
+        };
+
+        manager.setDnsSdResponseListeners(channel, servListener, txtListener);
     }
 
     /* register the broadcast receiver with the intent values to be matched */
@@ -66,6 +135,7 @@ public class WiFiDirectManager {
             @Override
             public void onSuccess() {
                 Log.d("WiFiDirectActivity", "Discover peers success");
+                discoverServices();
             }
 
             @Override
@@ -75,28 +145,50 @@ public class WiFiDirectManager {
         });
     }
 
+    public void discoverServices() {
+        // manager.setDnsSdResponseListeners(channel, servListener, txtListener);
+        // manager.setDnsSdTxtRecordListener(channel, txtListener);
+        manager.discoverServices(channel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                Log.d("WiFiDirectActivity", "Service discovery success");
+            }
+
+            @Override
+            public void onFailure(int code) {
+                Log.d("WiFiDirectActivity", "Service discovery failure " + code);
+            }
+        });
+    }
+
     private PeerListListener peerListListener = new PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
             Collection<WifiP2pDevice> refreshedPeers = peerList.getDeviceList();
+            // Filter peers to include only those that offer the same service
+            List<WifiP2pDevice> filteredPeers = new ArrayList<>();
+            for (WifiP2pDevice device : refreshedPeers) {
+                if (deviceMap.containsKey(device.deviceAddress)) {
+                    filteredPeers.add(device);
+                }
+            }
 
-            if (!refreshedPeers.equals(peers)) {
+            if (!filteredPeers.equals(peers)) {
                 peers.clear();
-                peers.addAll(refreshedPeers);
+                peers.addAll(filteredPeers);
 
                 Log.d("WiFiDirectActivity",
-                        "Peer list changed. Amount of peers: " + refreshedPeers.size());
+                        "Filtered peer list changed. Amount of peers offering the service: " + filteredPeers.size());
 
-                // Log every peer
-                for (WifiP2pDevice peer : refreshedPeers) {
-                    Log.d("WiFiDirectActivity", "Peer: " + peer.deviceName + " " + peer.deviceAddress);
+                // Log every peer that offers the service
+                for (WifiP2pDevice peer : filteredPeers) {
+                    Log.d("WiFiDirectActivity", "Service Peer: " + peer.deviceName + " " + peer.deviceAddress);
                 }
             }
 
             if (peers.size() == 0) {
-                Log.d("WiFiDirectActivity", "No devices found");
+                Log.d("WiFiDirectActivity", "No service devices found");
             }
         }
     };
-
 }
