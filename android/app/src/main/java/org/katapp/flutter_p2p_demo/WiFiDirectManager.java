@@ -23,6 +23,10 @@ import android.net.wifi.p2p.WifiP2pManager.DnsSdTxtRecordListener;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.net.wifi.p2p.WifiP2pManager.ActionListener;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
+import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pInfo;
+import android.net.wifi.WpsInfo;
+import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 
 public class WiFiDirectManager {
     WifiP2pManager manager;
@@ -51,7 +55,7 @@ public class WiFiDirectManager {
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-        receiver = new WiFiDirectBroadcastReceiver(manager, channel, this, peerListListener);
+        receiver = new WiFiDirectBroadcastReceiver(manager, channel, this, peerListListener, connectionInfoListener);
 
         context.registerReceiver(receiver, intentFilter);
 
@@ -113,6 +117,8 @@ public class WiFiDirectManager {
                     if (!peers.contains(device))
                         peers.add(device); // if Service is found later than peer add manually
                     Log.d("WiFiDirectActivity", "Service discovery success, added peer: " + device.deviceName);
+
+                    connectToFirstDevice();
                 }
             }
         };
@@ -184,6 +190,8 @@ public class WiFiDirectManager {
                 for (WifiP2pDevice peer : filteredPeers) {
                     Log.d("WiFiDirectActivity", "Service Peer: " + peer.deviceName + " " + peer.deviceAddress);
                 }
+
+                connectToFirstDevice();
             }
 
             if (peers.size() == 0) {
@@ -191,4 +199,53 @@ public class WiFiDirectManager {
             }
         }
     };
+
+    private ConnectionInfoListener connectionInfoListener = new ConnectionInfoListener() {
+        @Override
+        public void onConnectionInfoAvailable(WifiP2pInfo info) {
+            // InetAddress from WifiP2pInfo struct.
+            String groupOwnerAddress = info.groupOwnerAddress.getHostAddress();
+
+            // After the group negotiation, we can determine the group owner.
+            if (info.groupFormed && info.isGroupOwner) {
+                // Do whatever tasks are specific to the group owner.
+                // One common case is creating a group owner thread and accepting
+                // incoming connections.
+
+                Log.d("WiFiDirectActivity", "I am the group owner");
+            } else if (info.groupFormed) {
+                // The other device acts as the peer (client). In this case,
+                // you'll want to create a peer thread that connects
+                // to the group owner.
+
+                Log.d("WiFiDirectActivity", "I am a group client");
+            }
+        }
+    };
+
+    public void connectToFirstDevice() {
+        if (peers.size() > 0) {
+            connect(peers.get(0));
+        }
+    }
+
+    public void connect(WifiP2pDevice device) {
+        WifiP2pConfig config = new WifiP2pConfig();
+        config.deviceAddress = device.deviceAddress;
+        config.wps.setup = WpsInfo.PBC;
+
+        manager.connect(channel, config, new ActionListener() {
+
+            @Override
+            public void onSuccess() {
+                // WiFiDirectBroadcastReceiver notifies us. Ignore for now.
+            }
+
+            @Override
+            public void onFailure(int reason) {
+                Log.d("WiFiDirectActivity", "Connect failed. Retry.");
+            }
+        });
+    }
+
 }

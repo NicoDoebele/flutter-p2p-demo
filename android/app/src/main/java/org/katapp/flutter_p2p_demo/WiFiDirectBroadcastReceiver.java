@@ -13,6 +13,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
+import android.net.wifi.p2p.WifiP2pInfo;
+import android.net.NetworkInfo;
+import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 
 /**
  * A BroadcastReceiver that notifies of important Wi-Fi p2p events.
@@ -24,14 +27,17 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
     private Channel channel;
     private WiFiDirectManager wifiManager;
     private PeerListListener peerListListener;
+    private ConnectionInfoListener connectionListener;
 
     public WiFiDirectBroadcastReceiver(WifiP2pManager manager, Channel channel,
-            WiFiDirectManager wifiManager, PeerListListener peerListListener) {
+            WiFiDirectManager wifiManager, PeerListListener peerListListener,
+            ConnectionInfoListener connectionListener) {
         super();
         this.manager = manager;
         this.channel = channel;
         this.wifiManager = wifiManager;
         this.myPeerListListener = peerListListener;
+        this.connectionListener = connectionListener;
     }
 
     @Override
@@ -58,7 +64,22 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
             }
 
         } else if (WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION.equals(action)) {
-            // Respond to new connection or disconnections
+
+            if (manager == null) {
+                return;
+            }
+
+            NetworkInfo networkInfo = (NetworkInfo) intent
+                    .getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
+
+            if (networkInfo.isConnected()) {
+
+                // We are connected with the other device, request connection
+                // info to find group owner IP
+
+                manager.requestConnectionInfo(channel, connectionListener);
+            }
+
         } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
             // Respond to this device's wifi state changing
         }
