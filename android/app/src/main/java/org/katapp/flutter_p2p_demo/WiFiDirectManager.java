@@ -29,12 +29,21 @@ import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 
 public class WiFiDirectManager {
+    interface WiFiP2PConnectionInfoListener {
+        void onConnectionInfoAvailable(WifiP2pInfo info);
+    }
+
     WifiP2pManager manager;
     Channel channel;
     BroadcastReceiver receiver;
     IntentFilter intentFilter;
     Context context;
     WifiP2pDnsSdServiceRequest serviceRequest;
+    WiFiP2PConnectionInfoListener wiFiP2PConnectionInfoListener;
+
+    public void setWiFiP2PConnectionInfoListener(WiFiP2PConnectionInfoListener listener) {
+        this.wiFiP2PConnectionInfoListener = listener;
+    }
 
     private List<WifiP2pDevice> peers = new ArrayList<>();
     private final Map<String, WifiP2pDevice> deviceMap = new HashMap<>();
@@ -203,22 +212,8 @@ public class WiFiDirectManager {
     private ConnectionInfoListener connectionInfoListener = new ConnectionInfoListener() {
         @Override
         public void onConnectionInfoAvailable(WifiP2pInfo info) {
-            // InetAddress from WifiP2pInfo struct.
-            String groupOwnerAddress = info.groupOwnerAddress.getHostAddress();
-
-            // After the group negotiation, we can determine the group owner.
-            if (info.groupFormed && info.isGroupOwner) {
-                // Do whatever tasks are specific to the group owner.
-                // One common case is creating a group owner thread and accepting
-                // incoming connections.
-
-                Log.d("WiFiDirectActivity", "I am the group owner");
-            } else if (info.groupFormed) {
-                // The other device acts as the peer (client). In this case,
-                // you'll want to create a peer thread that connects
-                // to the group owner.
-
-                Log.d("WiFiDirectActivity", "I am a group client");
+            if (wiFiP2PConnectionInfoListener != null) {
+                wiFiP2PConnectionInfoListener.onConnectionInfoAvailable(info);
             }
         }
     };
