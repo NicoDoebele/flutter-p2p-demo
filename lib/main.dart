@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_p2p_demo/pages/bluetooth.dart';
 import 'package:flutter_p2p_demo/pages/wifidirect.dart';
+import 'package:flutter_p2p_demo/pages/wifiaware.dart';
 
 void main() {
   runApp(const MyApp());
@@ -56,6 +57,17 @@ class MainPage extends StatelessWidget {
                 );
               },
               child: const Text('Go to WiFi Direct Page'),
+            ),
+            const SizedBox(height: 20), // Adds space between the two buttons.
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const WiFiAwarePage()),
+                );
+              },
+              child: const Text('Go to WiFi Aware Page'),
             ),
           ],
         ),

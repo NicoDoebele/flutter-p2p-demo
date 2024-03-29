@@ -8,6 +8,7 @@ import android.os.Bundle;
 
 import org.katapp.flutter_p2p_demo.BleGattServerManager;
 import org.katapp.flutter_p2p_demo.WiFiDirectManager;
+import org.katapp.flutter_p2p_demo.WiFiAwareManager;
 import android.util.Log;
 import android.net.wifi.p2p.WifiP2pInfo;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ public class MainActivity extends FlutterActivity {
     private static final String EVENT_CHANNEL = "org.katapp.flutter_p2p_demo/connection";
     private BleGattServerManager bleGattServerManager;
     private WiFiDirectManager wifiDirectManager;
+    private WiFiAwareManager wifiAwareManager;
     Bundle savedInstanceState;
 
     @Override
@@ -25,6 +27,7 @@ public class MainActivity extends FlutterActivity {
         this.savedInstanceState = savedInstanceState;
         bleGattServerManager = new BleGattServerManager(this);
         wifiDirectManager = new WiFiDirectManager(this);
+        wifiAwareManager = new WiFiAwareManager(this);
     }
 
     @Override
@@ -54,6 +57,10 @@ public class MainActivity extends FlutterActivity {
                             break;
                         case "wifiDirectDiscoverPeers":
                             wifiDirectManager.discoverPeers();
+                            result.success(null);
+                            break;
+                        case "initWiFiAware":
+                            wifiAwareManager.init();
                             result.success(null);
                             break;
                         default:
