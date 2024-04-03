@@ -68,6 +68,7 @@ public class BleGattServerManager {
     public void stop() {
         if (gattServer != null) {
             gattServer.close();
+            gattServer = null;
         }
         advertisingManager.stopAdvertising();
     }

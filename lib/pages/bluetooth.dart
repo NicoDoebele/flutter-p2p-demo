@@ -63,11 +63,11 @@ class BluetoothPageState extends State<BluetoothPage> {
 
         if (!result.device.isConnected) {
           result.device.connect();
+
           getAllDataFromNewDevice(result.device);
 
           if (!knownDevices.contains(result.device)) {
             subscribeToDeviceServive(result.device);
-          } else {
             knownDevices.add(result.device);
           }
         }
