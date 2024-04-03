@@ -1,4 +1,4 @@
-package org.katapp.flutter_p2p_demo;
+package org.katapp.flutter_p2p_demo.bluetooth;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattServer;
@@ -9,11 +9,12 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
 import java.util.UUID;
-import org.katapp.flutter_p2p_demo.BleAdvertisingManager;
 import java.util.ArrayList;
 import java.util.List;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattDescriptor;
+
+import org.katapp.flutter_p2p_demo.bluetooth.BleAdvertisingManager;
 
 public class BleGattServerManager {
     private Context context;
@@ -37,7 +38,7 @@ public class BleGattServerManager {
         advertisingManager = new BleAdvertisingManager(context);
     }
 
-    public void startGattServer() {
+    public void start() {
         if (bluetoothAdapter == null) {
             System.out.println("Bluetooth not supported");
             return;
@@ -64,7 +65,7 @@ public class BleGattServerManager {
         gattServer.addService(service);
     }
 
-    public void stopGattServer() {
+    public void stop() {
         if (gattServer != null) {
             gattServer.close();
         }

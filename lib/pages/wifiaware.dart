@@ -15,7 +15,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   final List<String> appData = [];
 
   static const platform =
-      MethodChannel('org.katapp.flutter_p2p_demo/advertising');
+      MethodChannel('org.katapp.flutter_p2p_demo.wifiaware/controller');
 
   @override
   void initState() {
@@ -24,9 +24,18 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   }
 
   @override
-  void dispose() {
+  void dispose() async {
     _controller.dispose();
+    _stopWiFiAware();
     super.dispose();
+  }
+
+  void _stopWiFiAware() {
+    try {
+      platform.invokeMethod('stop');
+    } on PlatformException catch (e) {
+      print("Failed to stop WiFi Aware: '${e.message}'.");
+    }
   }
 
   void _init() async {
@@ -34,7 +43,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     await Permission.location.request();
 
     try {
-      await platform.invokeMethod('initWiFiAware');
+      await platform.invokeMethod('start');
     } on PlatformException catch (e) {
       print("Failed to init WiFi Aware: '${e.message}'.");
     }

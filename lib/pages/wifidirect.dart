@@ -28,10 +28,10 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   Timer? updateTimer;
 
   static const platform =
-      MethodChannel('org.katapp.flutter_p2p_demo/advertising');
+      MethodChannel('org.katapp.flutter_p2p_demo.wifidirect/controller');
 
   static const EventChannel _connectionEventChannel =
-      EventChannel('org.katapp.flutter_p2p_demo/connection');
+      EventChannel('org.katapp.flutter_p2p_demo.wifidirect/connection');
 
   @override
   void initState() {
@@ -39,11 +39,14 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     _connectionEventChannel
         .receiveBroadcastStream()
         .listen(_onConnectionChange, onError: _onError);
-    _init();
+    _start();
   }
 
   @override
   void dispose() {
+    _stopWiFiDirect();
+    _connectionEventChannel.receiveBroadcastStream().listen(null);
+
     serverSocket?.close();
     clientSocket?.close();
     for (final client in clients) {
@@ -56,26 +59,23 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      print("App is in background");
-    } else if (state == AppLifecycleState.resumed) {
-      print("App is in foreground");
+  void _stopWiFiDirect() {
+    try {
+      platform.invokeMethod('stop');
+    } on PlatformException catch (e) {
+      print("Failed to stop WiFi Direct: '${e.message}'.");
     }
   }
 
-  void _init() async {
+  void _start() async {
     await Permission.nearbyWifiDevices.request();
     await Permission.location.request();
 
     try {
-      await platform.invokeMethod('initWifiDirect');
+      await platform.invokeMethod('start');
     } on PlatformException catch (e) {
       print("Failed to init WiFi Direct: '${e.message}'.");
     }
-
-    _startDiscovery();
   }
 
   void _onError(Object error) {
@@ -107,16 +107,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     }
   }
 
-  void _startDiscovery() async {
-    try {
-      await platform.invokeMethod('wifiDirectDiscoverPeers');
-    } on PlatformException catch (e) {
-      print("Failed to start WiFi Direct Discovery: '${e.message}'.");
-    }
-  }
-
   void _addData(String data, bool isReceived) {
-
     if (appData.contains(data)) {
       return;
     }

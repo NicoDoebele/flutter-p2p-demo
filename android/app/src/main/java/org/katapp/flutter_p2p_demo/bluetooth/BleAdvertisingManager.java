@@ -1,4 +1,4 @@
-package org.katapp.flutter_p2p_demo;
+package org.katapp.flutter_p2p_demo.bluetooth;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;

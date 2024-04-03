@@ -1,10 +1,9 @@
-package org.katapp.flutter_p2p_demo;
+package org.katapp.flutter_p2p_demo.wifidirect;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
-import org.katapp.flutter_p2p_demo.WiFiDirectBroadcastReceiver;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
@@ -28,10 +27,10 @@ import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 
+import org.katapp.flutter_p2p_demo.wifidirect.WiFiDirectBroadcastReceiver;
+import org.katapp.flutter_p2p_demo.wifidirect.interfaces.WiFiP2PConnectionInfoListener;
+
 public class WiFiDirectManager {
-    interface WiFiP2PConnectionInfoListener {
-        void onConnectionInfoAvailable(WifiP2pInfo info);
-    }
 
     WifiP2pManager manager;
     Channel channel;
@@ -52,7 +51,7 @@ public class WiFiDirectManager {
         this.context = context;
     }
 
-    public void init(Bundle savedInstanceState) {
+    public void start() {
         manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(context, Looper.getMainLooper(), null);
 
@@ -68,7 +67,13 @@ public class WiFiDirectManager {
 
         context.registerReceiver(receiver, intentFilter);
 
+        discoverPeers();
+
         Log.d("WiFiDirectActivity", "WiFi Direct initialized");
+    }
+
+    public void stop() {
+        context.unregisterReceiver(receiver);
     }
 
     private void registerService() {

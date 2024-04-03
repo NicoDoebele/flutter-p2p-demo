@@ -1,4 +1,4 @@
-package org.katapp.flutter_p2p_demo;
+package org.katapp.flutter_p2p_demo.wifiaware;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -39,7 +39,7 @@ public class WiFiAwareManager {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
     }
 
-    public void init() {
+    public void start() {
         if (!isAvailable()) {
             Log.d("WiFiAwareManager", "WiFi Aware is not available");
             return;
@@ -66,6 +66,15 @@ public class WiFiAwareManager {
                 Log.d("WiFiAwareManager", "WiFi Aware attach failed");
             }
         }, null);
+    }
+
+    public void stop() {
+        if (session != null) {
+            session.close();
+            session = null;
+        }
+
+        context.unregisterReceiver(receiver);
     }
 
     private void startPublishing() {

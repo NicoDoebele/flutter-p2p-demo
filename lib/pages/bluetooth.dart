@@ -23,7 +23,7 @@ class BluetoothPageState extends State<BluetoothPage> {
   Timer? updateTimer;
 
   static const platform =
-      MethodChannel('org.katapp.flutter_p2p_demo/advertising');
+      MethodChannel('org.katapp.flutter_p2p_demo.bluetooth/controller');
   final Guid serviceUUID = Guid('c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81');
   final Guid characteristicUUID = Guid('5e6525b1-4a90-4baf-a4a1-9b4a53641970');
 
@@ -81,7 +81,7 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   void startGattServer() async {
     try {
-      await platform.invokeMethod('startBluetoothGattServer');
+      await platform.invokeMethod('start');
     } on PlatformException catch (e) {
       print("Failed to start Bluetooth GattServer: '${e.message}'.");
     }
@@ -89,7 +89,7 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   void stopGattServer() async {
     try {
-      await platform.invokeMethod('stopBluetoothGattServer');
+      await platform.invokeMethod('stop');
     } on PlatformException catch (e) {
       print("Failed to stop Bluetooth GattServer: '${e.message}'.");
     }

@@ -5,16 +5,15 @@ import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.EventChannel;
 import android.os.Bundle;
-
-import org.katapp.flutter_p2p_demo.BleGattServerManager;
-import org.katapp.flutter_p2p_demo.WiFiDirectManager;
-import org.katapp.flutter_p2p_demo.WiFiAwareManager;
 import android.util.Log;
 import android.net.wifi.p2p.WifiP2pInfo;
 import java.util.HashMap;
 
+import org.katapp.flutter_p2p_demo.bluetooth.BleGattServerManager;
+import org.katapp.flutter_p2p_demo.wifidirect.WiFiDirectManager;
+import org.katapp.flutter_p2p_demo.wifiaware.WiFiAwareManager;
+
 public class MainActivity extends FlutterActivity {
-    private static final String CHANNEL = "org.katapp.flutter_p2p_demo/advertising";
     private static final String EVENT_CHANNEL = "org.katapp.flutter_p2p_demo/connection";
     private BleGattServerManager bleGattServerManager;
     private WiFiDirectManager wifiDirectManager;
@@ -35,15 +34,16 @@ public class MainActivity extends FlutterActivity {
 
         super.configureFlutterEngine(flutterEngine);
 
-        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), CHANNEL)
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.bluetooth/controller")
                 .setMethodCallHandler((call, result) -> {
                     switch (call.method) {
-                        case "startBluetoothGattServer":
-                            bleGattServerManager.startGattServer();
+                        case "start":
+                            bleGattServerManager.start();
                             result.success(null);
                             break;
-                        case "stopBluetoothGattServer":
-                            bleGattServerManager.startGattServer();
+                        case "stop":
+                            bleGattServerManager.stop();
                             result.success(null);
                             break;
                         case "updateBluetoothDataList":
@@ -51,16 +51,21 @@ public class MainActivity extends FlutterActivity {
                             bleGattServerManager.updateDataList(data);
                             result.success(null);
                             break;
-                        case "initWifiDirect":
-                            wifiDirectManager.init(savedInstanceState);
+                        default:
+                            result.notImplemented();
+                    }
+                });
+
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.wifidirect/controller")
+                .setMethodCallHandler((call, result) -> {
+                    switch (call.method) {
+                        case "start":
+                            wifiDirectManager.start();
                             result.success(null);
                             break;
-                        case "wifiDirectDiscoverPeers":
-                            wifiDirectManager.discoverPeers();
-                            result.success(null);
-                            break;
-                        case "initWiFiAware":
-                            wifiAwareManager.init();
+                        case "stop":
+                            wifiDirectManager.stop();
                             result.success(null);
                             break;
                         default:
@@ -68,7 +73,25 @@ public class MainActivity extends FlutterActivity {
                     }
                 });
 
-        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), EVENT_CHANNEL)
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.wifiaware/controller")
+                .setMethodCallHandler((call, result) -> {
+                    switch (call.method) {
+                        case "start":
+                            wifiAwareManager.start();
+                            result.success(null);
+                            break;
+                        case "stop":
+                            wifiAwareManager.stop();
+                            result.success(null);
+                            break;
+                        default:
+                            result.notImplemented();
+                    }
+                });
+
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.wifidirect/connection")
                 .setStreamHandler(new EventChannel.StreamHandler() {
                     @Override
                     public void onListen(Object arguments, EventChannel.EventSink events) {

@@ -1,8 +1,7 @@
-package org.katapp.flutter_p2p_demo;
+package org.katapp.flutter_p2p_demo.wifidirect;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import org.katapp.flutter_p2p_demo.WiFiDirectManager;
 import android.content.Intent;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
@@ -16,6 +15,8 @@ import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.NetworkInfo;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
+
+import org.katapp.flutter_p2p_demo.wifidirect.WiFiDirectManager;
 
 /**
  * A BroadcastReceiver that notifies of important Wi-Fi p2p events.
