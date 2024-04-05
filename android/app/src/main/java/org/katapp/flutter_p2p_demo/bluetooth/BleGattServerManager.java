@@ -13,7 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.os.Handler;
+import android.os.Looper;
 
+import org.katapp.flutter_p2p_demo.bluetooth.interfaces.BluetoothDataListener;
 import org.katapp.flutter_p2p_demo.bluetooth.BleAdvertisingManager;
 
 public class BleGattServerManager {
@@ -23,9 +26,16 @@ public class BleGattServerManager {
     private BluetoothGattServer gattServer;
     private BleAdvertisingManager advertisingManager;
     private BluetoothGattCharacteristic characteristic;
+    private BluetoothDataListener dataListener;
+
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    public void setBluetoothDataListener(BluetoothDataListener listener) {
+        this.dataListener = listener;
+    }
 
     private final List<String> dataList = new ArrayList<>();
-    private List<BluetoothDevice> subscribedDevices = new ArrayList<>();
+    private final List<BluetoothDevice> subscribedDevices = new ArrayList<>();
 
     private final UUID SERVICE_UUID = UUID.fromString("c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81");
     private final UUID CHARACTERISTIC_UUID = UUID.fromString("5e6525b1-4a90-4baf-a4a1-9b4a53641970");
@@ -71,9 +81,16 @@ public class BleGattServerManager {
             gattServer = null;
         }
         advertisingManager.stopAdvertising();
+
+        subscribedDevices.clear();
+        dataList.clear();
     }
 
     public void updateDataList(String data) {
+
+        if (data == null || data == "") {
+            return;
+        }
 
         // if data alredy in list return
         if (dataList.contains(data)) {
@@ -83,11 +100,17 @@ public class BleGattServerManager {
 
         dataList.add(data);
         System.out.println(dataList.toString());
-        notifySubscribedDevices(data.getBytes());
+        // notifySubscribedDevices(data.getBytes());
         System.out.println("Data received: " + data);
+
+        mainHandler.post(() -> {
+            if (dataListener != null) {
+                dataListener.onDataListUpdated(dataList);
+            }
+        });
     }
 
-    public void notifySubscribedDevices(byte[] data) {
+    private void notifySubscribedDevices(byte[] data) {
         System.out.println("Notify subscribed devices");
         for (BluetoothDevice device : subscribedDevices) {
             System.out.println("Notifying Device: " + device.getAddress());

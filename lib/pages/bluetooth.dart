@@ -14,7 +14,6 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class BluetoothPageState extends State<BluetoothPage> {
-  final List<BluetoothDevice> knownDevices = [];
   final TextEditingController _controller = TextEditingController();
 
   final List<String> appData = [];
@@ -24,6 +23,9 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   static const platform =
       MethodChannel('org.katapp.flutter_p2p_demo.bluetooth/controller');
+  static const dataStream =
+      EventChannel('org.katapp.flutter_p2p_demo.bluetooth/connection');
+
   final Guid serviceUUID = Guid('c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81');
   final Guid characteristicUUID = Guid('5e6525b1-4a90-4baf-a4a1-9b4a53641970');
 
@@ -31,6 +33,9 @@ class BluetoothPageState extends State<BluetoothPage> {
   void initState() {
     super.initState();
     initiateBluetooth();
+    _getDataFromAllConnectedDevices();
+
+    dataStream.receiveBroadcastStream().listen(_onDataListUpdate);
 
     // every 2 sec update the active connections
     updateTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
@@ -41,10 +46,37 @@ class BluetoothPageState extends State<BluetoothPage> {
   @override
   void dispose() {
     FlutterBluePlus.stopScan(); // Updated variable
+    for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+      device.disconnect();
+    }
     stopGattServer();
     updateTimer?.cancel();
     _controller.dispose();
+
+    dataStream.receiveBroadcastStream().listen(null).cancel();
+
     super.dispose();
+  }
+
+  void _onDataListUpdate(dynamic data) {
+    setState(() {
+      appData.clear();
+      // Ensure data is a List and contains only Strings.
+      if (data is List<dynamic>) {
+        // Convert each element to String, assuming they can be converted.
+        // You may need to handle the case where elements are not convertible to String.
+        final List<String> stringList = data.whereType<String>().toList();
+        appData.addAll(stringList);
+      }
+    });
+  }
+
+  void _getDataFromAllConnectedDevices() async {
+    for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+      if (device.isConnected) {
+        getAllDataFromNewDevice(device);
+      }
+    }
   }
 
   void initiateBluetooth() async {
@@ -57,7 +89,7 @@ class BluetoothPageState extends State<BluetoothPage> {
     await Permission.bluetoothAdvertise.request();
     await Permission.location.request();
 
-    FlutterBluePlus.onScanResults.listen((results) {
+    var subscription = FlutterBluePlus.onScanResults.listen((results) {
       if (results.isNotEmpty) {
         ScanResult result = results.last;
 
@@ -65,14 +97,13 @@ class BluetoothPageState extends State<BluetoothPage> {
           result.device.connect();
 
           getAllDataFromNewDevice(result.device);
-
-          if (!knownDevices.contains(result.device)) {
-            subscribeToDeviceServive(result.device);
-            knownDevices.add(result.device);
-          }
+          //subscribeToDeviceServive(result.device);
+          //knownDevices.add(result.device);
         }
       }
     });
+
+    FlutterBluePlus.cancelWhenScanComplete(subscription);
 
     await FlutterBluePlus.startScan(withServices: [serviceUUID]);
 
@@ -101,6 +132,8 @@ class BluetoothPageState extends State<BluetoothPage> {
     });
   }
 
+  /*
+  Write to each device instead
   Future<void> subscribeToDeviceServive(BluetoothDevice device) async {
     //wait until device is connected
     while (!device.isConnected) {
@@ -122,6 +155,7 @@ class BluetoothPageState extends State<BluetoothPage> {
       }
     }
   }
+  */
 
   Future<void> sendDataToAllDevices(String message) async {
     List<int> messageBytes =
@@ -146,17 +180,10 @@ class BluetoothPageState extends State<BluetoothPage> {
   }
 
   Future<void> addData(String message) async {
-    // if data in appData return
-    if (appData.contains(message)) {
-      return;
-    }
+    sendDataToAllDevices(message);
 
     _controller.clear();
 
-    setState(() {
-      appData.add(message);
-    });
-    // use platform to update locale data
     await platform.invokeMethod('updateBluetoothDataList', {'data': message});
   }
 

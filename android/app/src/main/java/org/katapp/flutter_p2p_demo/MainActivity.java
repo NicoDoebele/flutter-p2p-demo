@@ -117,6 +117,23 @@ public class MainActivity extends FlutterActivity {
                         wifiDirectManager.setWiFiP2PConnectionInfoListener(null);
                     }
                 });
+
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.bluetooth/connection")
+                .setStreamHandler(new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object arguments, EventChannel.EventSink events) {
+                        bleGattServerManager.setBluetoothDataListener(dataList -> {
+                            events.success(dataList);
+                        });
+                    }
+
+                    @Override
+                    public void onCancel(Object arguments) {
+                        bleGattServerManager.setBluetoothDataListener(null);
+                    }
+                });
+
     }
 
 }

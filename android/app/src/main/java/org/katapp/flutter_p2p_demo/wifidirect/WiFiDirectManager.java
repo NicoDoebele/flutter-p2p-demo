@@ -39,6 +39,7 @@ public class WiFiDirectManager {
     Context context;
     WifiP2pDnsSdServiceRequest serviceRequest;
     WiFiP2PConnectionInfoListener wiFiP2PConnectionInfoListener;
+    WifiP2pDnsSdServiceInfo serviceInfo;
 
     public void setWiFiP2PConnectionInfoListener(WiFiP2PConnectionInfoListener listener) {
         this.wiFiP2PConnectionInfoListener = listener;
@@ -73,13 +74,75 @@ public class WiFiDirectManager {
     }
 
     public void stop() {
+        // Check if Wi-Fi P2P is not null
+        if (manager != null && channel != null) {
+            // Leave any active P2P group
+            manager.removeGroup(channel, new ActionListener() {
+                @Override
+                public void onSuccess() {
+                    Log.d("WiFiDirectActivity", "Removed from P2P group");
+                }
+
+                @Override
+                public void onFailure(int reason) {
+                    Log.d("WiFiDirectActivity", "Failed to remove from P2P group");
+                }
+            });
+
+            // Remove local service
+            if (serviceInfo != null) {
+                manager.removeLocalService(channel, serviceInfo, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d("WiFiDirectActivity", "Local service removed");
+                    }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        Log.d("WiFiDirectActivity", "Failed to remove local service");
+                    }
+                });
+            }
+
+            // Remove service discovery request
+            if (serviceRequest != null) {
+                manager.removeServiceRequest(channel, serviceRequest, new ActionListener() {
+                    @Override
+                    public void onSuccess() {
+                        Log.d("WiFiDirectActivity", "Service discovery request removed");
+                    }
+
+                    @Override
+                    public void onFailure(int reason) {
+                        Log.d("WiFiDirectActivity", "Failed to remove service discovery request");
+                    }
+                });
+            }
+
+            // Stop service discovery
+            manager.stopPeerDiscovery(channel, new ActionListener() {
+                @Override
+                public void onSuccess() {
+                    Log.d("WiFiDirectActivity", "Stopped peer discovery");
+                }
+
+                @Override
+                public void onFailure(int reason) {
+                    Log.d("WiFiDirectActivity", "Failed to stop peer discovery");
+                }
+            });
+        }
+
+        // Unregister receiver and clear lists as already implemented
         context.unregisterReceiver(receiver);
+        peers.clear();
+        deviceMap.clear();
     }
 
     private void registerService() {
         Map<String, String> record = new HashMap();
         record.put("listeningPort", "8888");
-        WifiP2pDnsSdServiceInfo serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
+        serviceInfo = WifiP2pDnsSdServiceInfo.newInstance(
                 "_katappwifidirectservice", "_presence._tcp", record);
 
         manager.addLocalService(channel, serviceInfo, new ActionListener() {
