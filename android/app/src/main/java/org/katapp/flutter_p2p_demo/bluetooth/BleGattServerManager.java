@@ -15,9 +15,12 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.os.Handler;
 import android.os.Looper;
+import org.json.JSONObject;
+import org.json.JSONException;
 
-import org.katapp.flutter_p2p_demo.bluetooth.interfaces.BluetoothDataListener;
+import org.katapp.flutter_p2p_demo.bluetooth.interfaces.BluetoothMessageListener;
 import org.katapp.flutter_p2p_demo.bluetooth.BleAdvertisingManager;
+import org.katapp.flutter_p2p_demo.message.Message;
 
 public class BleGattServerManager {
     private Context context;
@@ -26,15 +29,17 @@ public class BleGattServerManager {
     private BluetoothGattServer gattServer;
     private BleAdvertisingManager advertisingManager;
     private BluetoothGattCharacteristic characteristic;
-    private BluetoothDataListener dataListener;
+    private BluetoothMessageListener messageListener;
+
+    private String priorData = "";
 
     private Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    public void setBluetoothDataListener(BluetoothDataListener listener) {
-        this.dataListener = listener;
+    public void setBluetoothMessageListener(BluetoothMessageListener listener) {
+        this.messageListener = listener;
     }
 
-    private final List<String> dataList = new ArrayList<>();
+    private final List<Message> messageList = new ArrayList<>();
     private final List<BluetoothDevice> subscribedDevices = new ArrayList<>();
 
     private final UUID SERVICE_UUID = UUID.fromString("c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81");
@@ -82,30 +87,32 @@ public class BleGattServerManager {
         }
         advertisingManager.stopAdvertising();
 
+        priorData = "";
+
         subscribedDevices.clear();
-        dataList.clear();
+        messageList.clear();
     }
 
-    public void updateDataList(String data) {
-
-        if (data == null || data == "") {
-            return;
+    public void updateMessageList(Message message) {
+        // if any of the messages in messageList equal the message return
+        for (Message m : messageList) {
+            if (m.equals(message)) {
+                System.out.println("Message already in list");
+                return;
+            }
         }
 
-        // if data alredy in list return
-        if (dataList.contains(data)) {
-            System.out.println("Data already in list");
-            return;
-        }
+        messageList.add(message);
 
-        dataList.add(data);
-        System.out.println(dataList.toString());
-        // notifySubscribedDevices(data.getBytes());
-        System.out.println("Data received: " + data);
+        System.out.println("Message added to list: " + message.getId());
 
         mainHandler.post(() -> {
-            if (dataListener != null) {
-                dataListener.onDataListUpdated(dataList);
+            if (messageListener != null) {
+                List<JSONObject> jsonMessageList = new ArrayList<>();
+                for (Message m : messageList) {
+                    jsonMessageList.add(m.toJson());
+                }
+                messageListener.onMessageListUpdated(jsonMessageList.toString());
             }
         });
     }
@@ -130,9 +137,15 @@ public class BleGattServerManager {
         public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset,
                 BluetoothGattCharacteristic characteristic) {
             if (CHARACTERISTIC_UUID.equals(characteristic.getUuid())) {
-                // Concatenate all strings from dataList with a separator for demonstration
-                String allData = String.join(", ", dataList); // Using comma as a separator
+
+                List<JSONObject> jsonMessageList = new ArrayList<>();
+                for (Message message : messageList) {
+                    jsonMessageList.add(message.toJson());
+                }
+                String allData = jsonMessageList.toString();
+                System.out.println("Sending data: " + allData);
                 byte[] data = allData.getBytes();
+
                 gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, data);
             } else {
                 gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, offset, null);
@@ -144,10 +157,22 @@ public class BleGattServerManager {
                 BluetoothGattCharacteristic characteristic, boolean preparedWrite,
                 boolean responseNeeded, int offset, byte[] value) {
             if (CHARACTERISTIC_UUID.equals(characteristic.getUuid())) {
-                // Add received data to dataList
+                
                 String receivedData = new String(value);
 
-                updateDataList(receivedData);
+                String fullData = priorData + receivedData;
+
+                try {
+                    JSONObject messageJSON = new JSONObject(fullData);
+                    Message message = new Message(messageJSON.toString());
+                    message.setTimeReceivedAsCurrent();
+                    updateMessageList(message);
+                    priorData = "";
+                } catch (JSONException e) {
+                    System.out.println("Error parsing JSON");
+                    priorData += receivedData;
+                    e.printStackTrace();
+                }
 
                 if (responseNeeded) {
                     gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);

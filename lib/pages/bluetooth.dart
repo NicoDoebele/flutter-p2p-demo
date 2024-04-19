@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_p2p_demo/classes/Message.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class BluetoothPage extends StatefulWidget {
@@ -16,14 +18,14 @@ class BluetoothPage extends StatefulWidget {
 class BluetoothPageState extends State<BluetoothPage> {
   final TextEditingController _controller = TextEditingController();
 
-  final List<String> appData = [];
+  final List<Message> appData = [];
   int activeConnections = 0;
 
   Timer? updateTimer;
 
   static const platform =
       MethodChannel('org.katapp.flutter_p2p_demo.bluetooth/controller');
-  static const dataStream =
+  static const messageStream =
       EventChannel('org.katapp.flutter_p2p_demo.bluetooth/connection');
 
   final Guid serviceUUID = Guid('c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81');
@@ -35,7 +37,7 @@ class BluetoothPageState extends State<BluetoothPage> {
     initiateBluetooth();
     _getDataFromAllConnectedDevices();
 
-    dataStream.receiveBroadcastStream().listen(_onDataListUpdate);
+    messageStream.receiveBroadcastStream().listen(_onMessageListUpdate);
 
     // every 2 sec update the active connections
     updateTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
@@ -53,20 +55,18 @@ class BluetoothPageState extends State<BluetoothPage> {
     updateTimer?.cancel();
     _controller.dispose();
 
-    dataStream.receiveBroadcastStream().listen(null).cancel();
+    messageStream.receiveBroadcastStream().listen(null).cancel();
 
     super.dispose();
   }
 
-  void _onDataListUpdate(dynamic data) {
+  void _onMessageListUpdate(dynamic messageListJson) {
     setState(() {
       appData.clear();
-      // Ensure data is a List and contains only Strings.
-      if (data is List<dynamic>) {
-        // Convert each element to String, assuming they can be converted.
-        // You may need to handle the case where elements are not convertible to String.
-        final List<String> stringList = data.whereType<String>().toList();
-        appData.addAll(stringList);
+      
+      List<dynamic> messageList = jsonDecode(messageListJson);
+      for (var message in messageList) {
+        appData.add(Message.fromJson(message));
       }
     });
   }
@@ -157,6 +157,14 @@ class BluetoothPageState extends State<BluetoothPage> {
   }
   */
 
+  Future<void> splitWrite(List<int> value, BluetoothCharacteristic characteristic, {int timeout = 15}) async {
+    int chunk = characteristic.device.mtuNow - 5; // 3 + 2 bytes ble overhead
+    for (int i = 0; i < value.length; i += chunk) {
+      List<int> subvalue = value.sublist(i, min(i + chunk, value.length));
+      await characteristic.write(subvalue, withoutResponse:false, timeout: timeout);
+    }
+  }
+
   Future<void> sendDataToAllDevices(String message) async {
     List<int> messageBytes =
         utf8.encode(message); // Convert string to byte array
@@ -168,7 +176,8 @@ class BluetoothPageState extends State<BluetoothPage> {
             in service.characteristics) {
           if (characteristic.uuid == characteristicUUID) {
             try {
-              await characteristic.write(messageBytes, withoutResponse: false);
+              //await characteristic.write(messageBytes, allowLongWrite: true);
+              await splitWrite(messageBytes, characteristic);
               print("Message sent to device ${device.remoteId}");
             } catch (e) {
               print("Failed to send message to device ${device.remoteId}: $e");
@@ -179,12 +188,26 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-  Future<void> addData(String message) async {
-    sendDataToAllDevices(message);
-
+  Future<void> createMessage(String sizeString) async {
     _controller.clear();
+    int size;
 
-    await platform.invokeMethod('updateBluetoothDataList', {'data': message});
+    if (sizeString == '') {
+      size = 0;
+    } else {
+      size = int.parse(sizeString);
+    }
+
+    var messageJsonString = await platform.invokeMethod('createMessage', {'size': size});
+    sendDataToAllDevices(messageJsonString);
+  }
+
+  void addMessage(Message message) {
+    setState(() {
+      appData.add(message);
+    });
+
+    platform.invokeMethod('addMessage', {'message': message.toJson()});
   }
 
   Future<void> getAllDataFromNewDevice(BluetoothDevice device) async {
@@ -197,10 +220,21 @@ class BluetoothPageState extends State<BluetoothPage> {
       for (BluetoothCharacteristic characteristic in service.characteristics) {
         if (characteristic.uuid == characteristicUUID) {
           List<int> data = await characteristic.read();
-          String readableData = utf8.decode(data);
-          List<String> singleWords = readableData.split(', ');
-          for (String word in singleWords) {
-            addData(word);
+
+          try {
+            String jsonString = utf8.decode(data);
+            var jsonData = jsonDecode(jsonString);
+
+            if (jsonData is List) {
+              List<Message> messages = jsonData.map((item) => Message.fromJson(item)).toList();
+              for (Message m in messages) {
+                addMessage(m);
+              }
+            } else if (jsonData is Map) {
+              addMessage(Message.fromJson(jsonData as Map<String, dynamic>));
+            }
+          } catch (e) {
+            print('Failed to process data: $e');
           }
         }
       }
@@ -225,8 +259,24 @@ class BluetoothPageState extends State<BluetoothPage> {
             child: ListView.builder(
               itemCount: appData.length,
               itemBuilder: (context, index) {
+                final message = appData[index];
+                // Calculating the difference in time between timeSent and timeReceived, if both are available
+                String timeInfo;
+
+                String jsonString = message.toJson();
+                List<int> jsonBytes = utf8.encode(jsonString);
+                int sizeInBytes = jsonBytes.length;
+
+                if (message.timeSent != null && message.timeReceived != null) {
+                  final duration = message.timeReceived!.difference(message.timeSent!);
+                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
+                } else {
+                  timeInfo = 'Sent from this device';
+                }
+
                 return ListTile(
-                  title: Text(appData[index]),
+                  title: Text('${message.sender} :: ${message.id}'),
+                  subtitle: Text(timeInfo),
                 );
               },
             ),
@@ -240,17 +290,19 @@ class BluetoothPageState extends State<BluetoothPage> {
                   child: TextFormField(
                     controller: _controller, // Use the controller here
                     decoration: const InputDecoration(
-                      hintText: 'Enter some text',
+                      hintText: 'Amount of Bytes to send',
                       border: OutlineInputBorder(),
                     ),
-                    // Removed inputFormatters to allow any type of input
+                    keyboardType: TextInputType.number, // Set the keyboard type to numeric
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly, // Allow digits only, no decimals or negatives
+                    ],
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: () {
-                    // Use the text from the controller in addData
-                    addData(_controller.text);
+                    createMessage(_controller.text);
                   },
                 ),
               ],

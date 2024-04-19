@@ -8,7 +8,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.net.wifi.p2p.WifiP2pInfo;
 import java.util.HashMap;
+import java.util.Map;
 
+import org.katapp.flutter_p2p_demo.message.Message;
 import org.katapp.flutter_p2p_demo.bluetooth.BleGattServerManager;
 import org.katapp.flutter_p2p_demo.wifidirect.WiFiDirectManager;
 import org.katapp.flutter_p2p_demo.wifiaware.WiFiAwareManager;
@@ -46,9 +48,20 @@ public class MainActivity extends FlutterActivity {
                             bleGattServerManager.stop();
                             result.success(null);
                             break;
-                        case "updateBluetoothDataList":
-                            String data = call.argument("data");
-                            bleGattServerManager.updateDataList(data);
+                        case "createMessage":
+                            Integer size = call.argument("size");
+
+                            Message createMessage = new Message(size);
+                            createMessage.setTimeSentAsCurrent();
+
+                            bleGattServerManager.updateMessageList(createMessage);
+                            result.success(createMessage.toJson().toString());
+                            break;
+                        case "addMessage":
+                            String messageJsonString = call.argument("message");
+                            Message addMessage = new Message(messageJsonString);
+
+                            bleGattServerManager.updateMessageList(addMessage);
                             result.success(null);
                             break;
                         default:
@@ -123,14 +136,14 @@ public class MainActivity extends FlutterActivity {
                 .setStreamHandler(new EventChannel.StreamHandler() {
                     @Override
                     public void onListen(Object arguments, EventChannel.EventSink events) {
-                        bleGattServerManager.setBluetoothDataListener(dataList -> {
-                            events.success(dataList);
+                        bleGattServerManager.setBluetoothMessageListener(messageList -> {
+                            events.success(messageList);
                         });
                     }
 
                     @Override
                     public void onCancel(Object arguments) {
-                        bleGattServerManager.setBluetoothDataListener(null);
+                        bleGattServerManager.setBluetoothMessageListener(null);
                     }
                 });
 
