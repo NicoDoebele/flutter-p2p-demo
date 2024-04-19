@@ -106,6 +106,14 @@ public class MainActivity extends FlutterActivity {
                             wifiAwareManager.stop();
                             result.success(null);
                             break;
+                        case "createMessage":
+                            Integer size = call.argument("size");
+
+                            Message createMessage = new Message(size);
+                            createMessage.setTimeSentAsCurrent();
+
+                            result.success(createMessage.toJson().toString());
+                            break;
                         default:
                             result.notImplemented();
                     }
@@ -136,6 +144,39 @@ public class MainActivity extends FlutterActivity {
                     @Override
                     public void onCancel(Object arguments) {
                         wifiDirectManager.setWiFiP2PConnectionInfoListener(null);
+                    }
+                });
+
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.wifiaware/connection")
+                .setStreamHandler(new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object arguments, EventChannel.EventSink events) {
+                        wifiAwareManager.setConnectionInfoListener((ipv6, port) -> {
+
+                            if (ipv6 == null) {
+                                Log.d("WiFiAwareActivity", "No connection info available");
+                                events.error("NO INFO AVAILABLE", "No connection info available", null);
+                                return;
+                            }
+
+                            if (ipv6.startsWith("/")) {
+                                ipv6 = ipv6.substring(1);
+                            }
+
+                            Log.d("WiFiAwareActivity", "Connection info available: " + ipv6 + " : " + port);
+
+                            Map<String, Object> connectionInfo = new HashMap<>();
+                            connectionInfo.put("ipv6", ipv6);
+                            connectionInfo.put("port", port);
+
+                            events.success(connectionInfo);
+                        });
+                    }
+
+                    @Override
+                    public void onCancel(Object arguments) {
+                        wifiAwareManager.setConnectionInfoListener(null);
                     }
                 });
 
