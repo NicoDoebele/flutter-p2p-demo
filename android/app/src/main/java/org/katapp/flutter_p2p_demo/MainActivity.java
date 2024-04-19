@@ -81,6 +81,14 @@ public class MainActivity extends FlutterActivity {
                             wifiDirectManager.stop();
                             result.success(null);
                             break;
+                        case "createMessage":
+                            Integer size = call.argument("size");
+
+                            Message createMessage = new Message(size);
+                            createMessage.setTimeSentAsCurrent();
+
+                            result.success(createMessage.toJson().toString());
+                            break;
                         default:
                             result.notImplemented();
                     }

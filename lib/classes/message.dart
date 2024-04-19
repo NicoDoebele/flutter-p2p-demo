@@ -44,14 +44,11 @@ class Message {
   
     return other is Message &&
       other.id == id &&
-      other.sender == sender &&
-      other.timeSent == timeSent &&
-      other.timeReceived == timeReceived &&
-      other.dataToAchieveMessageSize == dataToAchieveMessageSize;
+      other.sender == sender;
   }
 
   @override
-  int get hashCode => id.hashCode ^ sender.hashCode ^ timeSent.hashCode ^ timeReceived.hashCode ^ (dataToAchieveMessageSize?.hashCode ?? 0);
+  int get hashCode => id.hashCode ^ sender.hashCode;
 
   @override
   String toString() {

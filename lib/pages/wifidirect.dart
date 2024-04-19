@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_p2p_demo/classes/Message.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class WiFiDirectPage extends StatefulWidget {
@@ -16,7 +17,7 @@ class WiFiDirectPage extends StatefulWidget {
 class WiFiDirectPageState extends State<WiFiDirectPage> {
   final TextEditingController _controller = TextEditingController();
 
-  final List<String> appData = [];
+  final List<Message> appData = [];
   int activeConnections = 0;
   bool isConnected = false;
   bool isGroupOwner = false;
@@ -24,6 +25,8 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   ServerSocket? serverSocket;
   final List<Socket> clients = [];
   Socket? clientSocket;
+
+  String previousData = '';
 
   Timer? updateTimer;
 
@@ -107,25 +110,56 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     }
   }
 
-  void _addData(String data, bool isReceived) {
-    if (appData.contains(data)) {
+  void _createMessage(String size) async {
+
+    int messageSize;
+
+    if (size == '') {
+      messageSize = 0;
+    } else {
+      messageSize = int.parse(size);
+    }
+
+    dynamic messageJsonString = await platform.invokeMethod('createMessage', {'size': messageSize});
+
+    Message message = Message.fromJson(jsonDecode(messageJsonString));
+
+    if (appData.contains(message)) {
       return;
     }
 
     setState(() {
-      appData.add(data);
+      appData.add(message);
     });
 
-    if (!isReceived) {
-      _controller.clear();
-    }
+    _controller.clear();
 
     if (isGroupOwner && isConnected) {
       for (final client in clients) {
-        client.write(data);
+        client.write(messageJsonString);
       }
     } else if (isConnected) {
-      clientSocket?.write(data);
+      clientSocket?.write(messageJsonString);
+    }
+  }
+
+  void _addMessage(Message message) {
+    if (appData.contains(message)) {
+      return;
+    }
+
+    message.timeReceived = DateTime.now();
+
+    setState(() {
+      appData.add(message);
+    });
+
+    if (isGroupOwner && isConnected) {
+      for (final client in clients) {
+        client.write(message.toJson());
+      }
+    } else if (isConnected) {
+      clientSocket?.write(message.toJson());
     }
   }
 
@@ -142,10 +176,20 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
         'Client connected: ${client.remoteAddress.address}:${client.remotePort}');
     clients.add(client);
     client.listen((data) {
-      final message = utf8.decode(data);
+      final messageJsonString = utf8.decode(data);
       print(
-          'Data from ${client.remoteAddress.address}:${client.remotePort} - $message');
-      _addData(message, true);
+          'Data from ${client.remoteAddress.address}:${client.remotePort} - $messageJsonString');
+      
+      try {
+        final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
+        _addMessage(message);
+        previousData = '';
+      } catch (e) {
+        print('Error: $e');
+        previousData += messageJsonString;
+      }
+
+
     }, onDone: () {
       clients.remove(client);
       print(
@@ -159,8 +203,17 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
         'Connected to: ${clientSocket?.remoteAddress.address}:${clientSocket?.port}');
 
     clientSocket?.listen((data) {
-      final message = utf8.decode(data);
-      _addData(message, true);
+      final messageJsonString = utf8.decode(data);
+      print('Data from ${clientSocket?.remoteAddress.address}:${clientSocket?.port} - $messageJsonString');
+
+      try {
+        final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
+        _addMessage(message);
+        previousData = '';
+      } catch (e) {
+        print('Error: $e');
+        previousData += messageJsonString;
+      }
     });
   }
 
@@ -183,8 +236,24 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
             child: ListView.builder(
               itemCount: appData.length,
               itemBuilder: (context, index) {
+                final message = appData[index];
+                // Calculating the difference in time between timeSent and timeReceived, if both are available
+                String timeInfo;
+
+                String jsonString = message.toJson();
+                List<int> jsonBytes = utf8.encode(jsonString);
+                int sizeInBytes = jsonBytes.length;
+
+                if (message.timeSent != null && message.timeReceived != null) {
+                  final duration = message.timeReceived!.difference(message.timeSent!);
+                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
+                } else {
+                  timeInfo = 'Sent from this device';
+                }
+
                 return ListTile(
-                  title: Text(appData[index]),
+                  title: Text('${message.sender} :: ${message.id}'),
+                  subtitle: Text(timeInfo),
                 );
               },
             ),
@@ -198,16 +267,19 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
                   child: TextFormField(
                     controller: _controller, // Use the controller here
                     decoration: const InputDecoration(
-                      hintText: 'Enter some text',
+                      hintText: 'Amount of Bytes to send',
                       border: OutlineInputBorder(),
                     ),
-                    // Removed inputFormatters to allow any type of input
+                    keyboardType: TextInputType.number, // Set the keyboard type to numeric
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.digitsOnly, // Allow digits only, no decimals or negatives
+                    ],
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.send),
                   onPressed: () {
-                    _addData(_controller.text, false);
+                    _createMessage(_controller.text);
                   },
                 ),
               ],
