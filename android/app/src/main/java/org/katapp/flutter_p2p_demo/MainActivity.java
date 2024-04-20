@@ -114,6 +114,11 @@ public class MainActivity extends FlutterActivity {
 
                             result.success(createMessage.toJson().toString());
                             break;
+                        case "sendMessageToSubscribers":
+                            String messageJsonString = call.argument("message");
+                            wifiAwareManager.sendDataToAllClients(messageJsonString);
+                            result.success(null);
+                            break;
                         default:
                             result.notImplemented();
                     }
@@ -152,25 +157,8 @@ public class MainActivity extends FlutterActivity {
                 .setStreamHandler(new EventChannel.StreamHandler() {
                     @Override
                     public void onListen(Object arguments, EventChannel.EventSink events) {
-                        wifiAwareManager.setConnectionInfoListener((ipv6, port) -> {
-
-                            if (ipv6 == null) {
-                                Log.d("WiFiAwareActivity", "No connection info available");
-                                events.error("NO INFO AVAILABLE", "No connection info available", null);
-                                return;
-                            }
-
-                            if (ipv6.startsWith("/")) {
-                                ipv6 = ipv6.substring(1);
-                            }
-
-                            Log.d("WiFiAwareActivity", "Connection info available: " + ipv6 + " : " + port);
-
-                            Map<String, Object> connectionInfo = new HashMap<>();
-                            connectionInfo.put("ipv6", ipv6);
-                            connectionInfo.put("port", port);
-
-                            events.success(connectionInfo);
+                        wifiAwareManager.setConnectionInfoListener(message -> {
+                            events.success(message);
                         });
                     }
 

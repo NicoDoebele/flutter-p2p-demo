@@ -18,15 +18,6 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
 
   final List<Message> appData = [];
 
-  ServerSocket? serverSocket;
-  final List<Socket> subscribers = [];
-
-  final List<Socket> clientSockets = [];
-
-  final List<Map<String, dynamic>> connectionInfos = [];
-
-  String previousData = '';
-
   static const platform =
       MethodChannel('org.katapp.flutter_p2p_demo.wifiaware/controller');
     
@@ -38,7 +29,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     super.initState();
     _connectionEventChannel
       .receiveBroadcastStream()
-      .listen(_onConnectionChange);
+      .listen(_onMessageReceived);
     //_startServerSocket();
     _init();
   }
@@ -48,33 +39,13 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     _controller.dispose();
     _stopWiFiAware();
     _connectionEventChannel.receiveBroadcastStream().listen(null);
-    await serverSocket?.close();
-    for (final subscriber in subscribers) {
-      await subscriber.close();
-    }
-    for (final clientSocket in clientSockets) {
-      await clientSocket.close();
-    }
-    serverSocket = null;
-    subscribers.clear();
-    clientSockets.clear();
     super.dispose();
   }
 
-  void _onConnectionChange(dynamic event) {
-    print('Connection event: $event');
-
-    // get port and address by map
-    final Map<String, dynamic> connectionInfo = Map<String, dynamic>.from(event);
-
-    connectionInfos.add(connectionInfo);
-
-    if (connectionInfo.length == 1) {
-      final String address = connectionInfos[0]['ipv6'];
-      final int port = connectionInfos[0]['port'];
-
-      _connectToHost(address, port);
-    }
+  void _onMessageReceived(dynamic event) {
+    print('Received message: $event');
+    final message = Message.fromJson(jsonDecode(event));
+    _addMessage(message);
   }
 
   void _stopWiFiAware() {
@@ -94,6 +65,11 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     } on PlatformException catch (e) {
       print("Failed to init WiFi Aware: '${e.message}'.");
     }
+  }
+
+  void _sendMessageToSubscribers(Message messasge) {
+    print('Sending message to subscribers: $messasge');
+    platform.invokeMethod('sendMessageToSubscribers', {'message': messasge.toJson()});
   }
 
   void _createMessage(String size) async {
@@ -120,9 +96,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
 
     _controller.clear();
 
-    for (final subscriber in subscribers) {
-      subscriber.write(messageJsonString);
-    }
+    _sendMessageToSubscribers(message);
   }
 
   void _addMessage(Message message) {
@@ -136,66 +110,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       appData.add(message);
     });
 
-    for (final subscriber in subscribers) {
-      subscriber.write(message.toJson());
-    }
-  }
-
-  void _startServerSocket() async {
-    serverSocket = await ServerSocket.bind(InternetAddress('::1'), 8888);
-    print('Hosting on: ${serverSocket?.address.address}:${serverSocket?.port}');
-    serverSocket?.listen((client) {
-      _handleClientConnection(client);
-    });
-  }
-
-  void _handleClientConnection(Socket client) async {
-    print(
-        'Client connected: ${client.remoteAddress.address}:${client.remotePort}');
-    subscribers.add(client);
-    client.listen((data) {
-      final messageJsonString = utf8.decode(data);
-      print(
-          'Data from ${client.remoteAddress.address}:${client.remotePort} - $messageJsonString');
-      
-      try {
-        final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
-        _addMessage(message);
-        previousData = '';
-      } catch (e) {
-        print('Error: $e');
-        previousData += messageJsonString;
-      }
-
-
-    }, onDone: () {
-      subscribers.remove(client);
-      print(
-          'Client disconnected: ${client.remoteAddress.address}:${client.remotePort}');
-    });
-  }
-
-  Future<void> _connectToHost(String address, int port) async {
-    InternetAddress serverAddress = InternetAddress(address);
-    Socket clientSocket = await Socket.connect(serverAddress, port);
-    print(
-        'Connected to: ${clientSocket?.remoteAddress.address}:${clientSocket?.port}');
-
-    clientSocket?.listen((data) {
-      final messageJsonString = utf8.decode(data);
-      print('Data from ${clientSocket?.remoteAddress.address}:${clientSocket?.port} - $messageJsonString');
-
-      try {
-        final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
-        _addMessage(message);
-        previousData = '';
-      } catch (e) {
-        print('Error: $e');
-        previousData += messageJsonString;
-      }
-    });
-
-    clientSockets.add(clientSocket);
+    // _sendMessageToSubscribers(message);
   }
 
   @override

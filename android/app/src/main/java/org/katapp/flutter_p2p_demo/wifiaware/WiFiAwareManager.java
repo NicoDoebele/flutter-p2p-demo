@@ -27,8 +27,16 @@ import java.net.Inet6Address;
 import java.net.ServerSocket;
 import android.os.Handler;
 import android.os.Looper;
+import java.util.ArrayList;
+import java.net.Socket;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.InputStream;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import org.katapp.flutter_p2p_demo.wifidirect.interfaces.WiFiAwareConnectionInfoListener;
+import org.katapp.flutter_p2p_demo.message.Message;
 
 public class WiFiAwareManager {
     private Context context;
@@ -51,7 +59,16 @@ public class WiFiAwareManager {
     private Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private ServerSocket serverSocket;
+    private List<Socket> subscribers = new ArrayList<>();
     int port;
+    private Thread serverThread;
+
+    private List<Socket> clientSockets = new ArrayList<>();
+    private List<Thread> clientThreads = new ArrayList<>();
+
+    private List<Inet6Address> connectedPeerIpv6Addresses = new ArrayList<>();
+
+    private String priorData = "";
 
     public void setConnectionInfoListener(WiFiAwareConnectionInfoListener connectionInfoListener) {
         this.connectionInfoListener = connectionInfoListener;
@@ -78,6 +95,8 @@ public class WiFiAwareManager {
             return;
         }
 
+        createSocket();
+
         wifiAwareManager = (WifiAwareManager) context.getSystemService(Context.WIFI_AWARE_SERVICE);
         filter = new IntentFilter(WifiAwareManager.ACTION_WIFI_AWARE_STATE_CHANGED);
         receiver = new WiFiAwareBroadcastReceiver(wifiAwareManager);
@@ -103,9 +122,46 @@ public class WiFiAwareManager {
     }
 
     public void stop() {
-        if (session != null) {
-            session.close();
-            session = null;
+
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (Exception e) {
+                Log.d("WiFiAwareManager", "Error closing server socket");
+            }
+        }
+
+        for (Socket subscriber : subscribers) {
+            try {
+                subscriber.close();
+            } catch (Exception e) {
+                Log.d("WiFiAwareManager", "Error closing subscriber socket");
+            }
+        }
+
+        for (Socket clientSocket : clientSockets) {
+            try {
+                clientSocket.close();
+            } catch (Exception e) {
+                Log.d("WiFiAwareManager", "Error closing client socket");
+            }
+        }
+
+        for (Thread clientThread : clientThreads) {
+            clientThread.interrupt();
+        }
+
+        serverThread.interrupt();
+        serverSocket = null;
+        serverThread = null;
+
+        clientThreads.clear();
+        subscribers.clear();
+        clientSockets.clear();
+
+        if (network != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+            network = null;
         }
 
         if (publishSession != null) {
@@ -118,14 +174,20 @@ public class WiFiAwareManager {
             subscribeSession = null;
         }
 
-        if (network != null) {
-            connectivityManager.unregisterNetworkCallback(networkCallback);
-            network = null;
+        if (session != null) {
+            session.close();
+            session = null;
         }
 
         context.unregisterReceiver(receiver);
 
         wifiAwareManager = null;
+
+        connectionInfoListener = null;
+
+        mainHandler.removeCallbacksAndMessages(null);
+
+        Log.d("WiFiAwareManager", "WiFi Aware stopped");
     }
 
     private void startPublishing() {
@@ -152,29 +214,142 @@ public class WiFiAwareManager {
         }, null);
     }
 
-    private void sendInfoToDart() {
+    private void createSocket() {
+        try {
+            serverSocket = new ServerSocket(8888);
+            port = serverSocket.getLocalPort();
+            serverThread = new Thread(this::acceptClients);
+            serverThread.start();
+        } catch (Exception e) {
+            Log.d("WiFiAwareManager", "Error creating server socket");
+        }
+    }
 
-        if (networkCapabilities == null) {
+    private void acceptClients() {
+        try {
+            while (true) {
+                Socket subscriber = serverSocket.accept(); // accept a connection
+                synchronized (subscribers) {
+                    subscribers.add(subscriber); // add to the list
+                }
+                System.out.println("Subscriber connected: " + subscriber.getInetAddress());
+            }
+        } catch (IOException e) {
+            System.err.println("Error accepting subscriber connection");
+            e.printStackTrace();
+        }
+    }
+
+    public void sendDataToAllClients(String messageJson) {
+        new Thread(() -> {
+            sendDatatoAllClientsThread(messageJson);
+        }).start();
+    }
+
+    private void sendDatatoAllClientsThread(String messageJson) {
+        byte[] data = messageJson.getBytes();
+
+        Log.d("WiFiAwareManager", "Sending data to all subscribers");
+        Log.d("WiFiAwareManager", "Subscribers: " + subscribers.size());
+
+        synchronized (subscribers) {
+            for (Socket subscriber : subscribers) {
+                try {
+                    OutputStream out = subscriber.getOutputStream();
+                    out.write(data);
+                    out.flush();
+                } catch (IOException e) {
+                    System.err.println("Error sending data to client: " + subscriber.getInetAddress());
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void connectToServer() {
+        WifiAwareNetworkInfo peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
+        Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
+        //int peerPort = peerAwareInfo.getPort();
+        int peerPort = 8888;
+
+        if (connectedPeerIpv6Addresses.contains(peerIpv6)) {
             return;
         }
 
-        WifiAwareNetworkInfo peerAwareInfo = (WifiAwareNetworkInfo) networkCapabilities.getTransportInfo();
-        Inet6Address peerIpv6 = peerAwareInfo.getPeerIpv6Addr();
-        int peerPort = peerAwareInfo.getPort();
-
-        mainHandler.post(() -> {
-            if (connectionInfoListener != null) {
-                connectionInfoListener.onConnectionInfoAvailable(peerIpv6.toString(), port);
-            }
-        });
+        connectedPeerIpv6Addresses.add(peerIpv6);
+    
+        try {
+            Socket socket = network.getSocketFactory().createSocket(peerIpv6, peerPort);
+            clientSockets.add(socket);
+            Log.d("WiFiAwareManager", "Connected to server");
+    
+            Thread socketThread = new Thread(() -> {
+                StringBuilder partialMessage = new StringBuilder();
+                try (InputStream inputStream = socket.getInputStream()) {
+                    byte[] data = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(data)) != -1) {
+                        partialMessage.append(new String(data, 0, bytesRead));
+                        processMessages(partialMessage);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error reading from server");
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        System.err.println("Error closing socket");
+                        e.printStackTrace();
+                    }
+                }
+            });
+    
+            socketThread.start();
+            clientThreads.add(socketThread);
+        } catch (IOException e) {
+            Log.d("WiFiAwareManager", "Error connecting to server");
+            e.printStackTrace();
+        }
     }
 
-    private void createSocket() {
+    private void processMessages(StringBuilder partialMessage) {
         try {
-            serverSocket = new ServerSocket(0);
-            port = serverSocket.getLocalPort();
+            int lastIndex = 0;
+            for (int i = 0; i < partialMessage.length(); i++) {
+                if (partialMessage.charAt(i) == '}' && isJsonComplete(partialMessage, lastIndex, i)) {
+                    String subStr = partialMessage.substring(lastIndex, i + 1);
+                    try {
+                        JSONObject messageJSON = new JSONObject(subStr);
+                        Message messageObject = new Message(messageJSON.toString());
+                        messageObject.setTimeReceivedAsCurrent();
+        
+                        mainHandler.post(() -> {
+                            if (connectionInfoListener != null) {
+                                connectionInfoListener.onMessageReceived(messageObject.toJson().toString());
+                            }
+                        });
+        
+                        lastIndex = i + 1;
+                    } catch (JSONException e) {
+                        continue; // not a complete JSON object yet
+                    }
+                }
+            }
+            partialMessage.delete(0, lastIndex); // Clear the processed part of the buffer
         } catch (Exception e) {
-            Log.d("WiFiAwareManager", "Error creating server socket");
+            System.err.println("Error processing message");
+            e.printStackTrace();
+        }
+    }
+    
+    private boolean isJsonComplete(StringBuilder partialMessage, int start, int end) {
+        String testingStr = partialMessage.substring(start, end + 1);
+        try {
+            new JSONObject(testingStr);
+            return true;
+        } catch (JSONException e) {
+            return false;
         }
     }
 
@@ -182,11 +357,9 @@ public class WiFiAwareManager {
         NetworkSpecifier networkSpecifier;
 
         if (publishSession != null) {
-            createSocket();
-
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(publishSession, peerHandle)
                 .setPskPassphrase("KatAppPassword")
-                .setPort(port)
+                .setPort(8888)
                 .build();
         } else if (subscribeSession != null) {
             networkSpecifier = new WifiAwareNetworkSpecifier.Builder(subscribeSession, peerHandle)
@@ -205,7 +378,6 @@ public class WiFiAwareManager {
             public void onAvailable(Network newNetwork) {
                 Log.d("WiFiAwareManager", "WiFi Aware network available");
                 network = newNetwork;
-                sendInfoToDart();
             }
 
             @Override
@@ -218,15 +390,14 @@ public class WiFiAwareManager {
                 Log.d("WiFiAwareManager", "WiFi Aware network capabilities changed");
                 network = newNetwork;
                 networkCapabilities = newNetworkCapabilities;
-                sendInfoToDart();
+                connectToServer();
             }
 
             @Override
             public void onLost(Network network) {
                 Log.d("WiFiAwareManager", "WiFi Aware network lost");
-                network = null;
-                networkCapabilities = null;
-                sendInfoToDart();
+                // network = null;
+                // networkCapabilities = null;
             }
         };
 
