@@ -156,10 +156,10 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
 
     if (isGroupOwner && isConnected) {
       for (final client in clients) {
-        client.write(message.toJson());
+        client.write(message.toJson().toString());
       }
     } else if (isConnected) {
-      clientSocket?.write(message.toJson());
+      clientSocket?.write(message.toJson().toString());
     }
   }
 
@@ -240,7 +240,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
                 // Calculating the difference in time between timeSent and timeReceived, if both are available
                 String timeInfo;
 
-                String jsonString = message.toJson();
+                String jsonString = message.toJson().toString();
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 

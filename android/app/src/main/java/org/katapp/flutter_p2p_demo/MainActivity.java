@@ -9,18 +9,22 @@ import android.util.Log;
 import android.net.wifi.p2p.WifiP2pInfo;
 import java.util.HashMap;
 import java.util.Map;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import org.katapp.flutter_p2p_demo.message.Message;
 import org.katapp.flutter_p2p_demo.bluetooth.BleGattServerManager;
 import org.katapp.flutter_p2p_demo.wifidirect.WiFiDirectManager;
 import org.katapp.flutter_p2p_demo.wifiaware.WiFiAwareManager;
+import org.katapp.flutter_p2p_demo.message.LocationManager;
 
 public class MainActivity extends FlutterActivity {
     private static final String EVENT_CHANNEL = "org.katapp.flutter_p2p_demo/connection";
     private BleGattServerManager bleGattServerManager;
     private WiFiDirectManager wifiDirectManager;
     private WiFiAwareManager wifiAwareManager;
-    Bundle savedInstanceState;
+    private FusedLocationProviderClient fusedLocationClient;
+    private Bundle savedInstanceState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +33,8 @@ public class MainActivity extends FlutterActivity {
         bleGattServerManager = new BleGattServerManager(this);
         wifiDirectManager = new WiFiDirectManager(this);
         wifiAwareManager = new WiFiAwareManager(this);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        LocationManager.setFusedLocationClient(fusedLocationClient);
     }
 
     @Override
@@ -51,11 +57,14 @@ public class MainActivity extends FlutterActivity {
                         case "createMessage":
                             Integer size = call.argument("size");
 
-                            Message createMessage = new Message(size);
-                            createMessage.setTimeSentAsCurrent();
+                            new Thread(() -> {
+                                Message createMessage = new Message(size);
+                                createMessage.setSentLocationAsCurrent();
+                                createMessage.setTimeSentAsCurrent();
 
-                            bleGattServerManager.updateMessageList(createMessage);
-                            result.success(createMessage.toJson().toString());
+                                bleGattServerManager.updateMessageList(createMessage);
+                                result.success(createMessage.toJson().toString());
+                            }).start();
                             break;
                         case "addMessage":
                             String messageJsonString = call.argument("message");
@@ -84,10 +93,13 @@ public class MainActivity extends FlutterActivity {
                         case "createMessage":
                             Integer size = call.argument("size");
 
-                            Message createMessage = new Message(size);
-                            createMessage.setTimeSentAsCurrent();
+                            new Thread(() -> {
+                                Message createMessage = new Message(size);
+                                createMessage.setSentLocationAsCurrent();
+                                createMessage.setTimeSentAsCurrent();
 
-                            result.success(createMessage.toJson().toString());
+                                result.success(createMessage.toJson().toString());
+                            }).start();
                             break;
                         default:
                             result.notImplemented();
@@ -109,10 +121,13 @@ public class MainActivity extends FlutterActivity {
                         case "createMessage":
                             Integer size = call.argument("size");
 
-                            Message createMessage = new Message(size);
-                            createMessage.setTimeSentAsCurrent();
+                            new Thread(() -> {
+                                Message createMessage = new Message(size);
+                                createMessage.setSentLocationAsCurrent();
+                                createMessage.setTimeSentAsCurrent();
 
-                            result.success(createMessage.toJson().toString());
+                                result.success(createMessage.toJson().toString());
+                            }).start();
                             break;
                         case "sendMessageToSubscribers":
                             String messageJsonString = call.argument("message");

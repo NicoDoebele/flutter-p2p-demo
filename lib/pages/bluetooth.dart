@@ -207,7 +207,7 @@ class BluetoothPageState extends State<BluetoothPage> {
       appData.add(message);
     });
 
-    platform.invokeMethod('addMessage', {'message': message.toJson()});
+    platform.invokeMethod('addMessage', {'message': message.toJson().toString()});
   }
 
   Future<void> getAllDataFromNewDevice(BluetoothDevice device) async {
@@ -263,11 +263,14 @@ class BluetoothPageState extends State<BluetoothPage> {
                 // Calculating the difference in time between timeSent and timeReceived, if both are available
                 String timeInfo;
 
-                String jsonString = message.toJson();
+                String jsonString = message.toJson().toString();
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 
-                if (message.timeSent != null && message.timeReceived != null) {
+                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != null) {
+                  final duration = message.timeReceived!.difference(message.timeSent!);
+                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} +-5 meters away';
+                }else if (message.timeSent != null && message.timeReceived != null) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
                   timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
                 } else {

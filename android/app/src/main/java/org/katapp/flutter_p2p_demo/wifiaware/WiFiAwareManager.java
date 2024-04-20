@@ -46,14 +46,10 @@ public class WiFiAwareManager {
     private WifiAwareSession session;
     private PublishDiscoverySession publishSession;
     private SubscribeDiscoverySession subscribeSession;
-
     private ConnectivityManager connectivityManager;
-
     private Network network;
     private NetworkCapabilities networkCapabilities;
-
     private ConnectivityManager.NetworkCallback networkCallback;
-
     private WiFiAwareConnectionInfoListener connectionInfoListener;
 
     private Handler mainHandler = new Handler(Looper.getMainLooper());

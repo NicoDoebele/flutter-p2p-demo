@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.os.Looper;
 import org.json.JSONObject;
 import org.json.JSONException;
+import android.util.Log;
 
 import org.katapp.flutter_p2p_demo.bluetooth.interfaces.BluetoothMessageListener;
 import org.katapp.flutter_p2p_demo.bluetooth.BleAdvertisingManager;
@@ -166,6 +167,8 @@ public class BleGattServerManager {
                     JSONObject messageJSON = new JSONObject(fullData);
                     Message message = new Message(messageJSON.toString());
                     message.setTimeReceivedAsCurrent();
+                    message.setReceivedLocationAsCurrent();
+                    Log.d("BleGattServerManager", "Message received: " + message.toJson().toString());
                     updateMessageList(message);
                     priorData = "";
                 } catch (JSONException e) {

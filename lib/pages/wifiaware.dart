@@ -135,7 +135,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
                 // Calculating the difference in time between timeSent and timeReceived, if both are available
                 String timeInfo;
 
-                String jsonString = message.toJson();
+                String jsonString = message.toJson().toString();
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 
