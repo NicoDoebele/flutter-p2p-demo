@@ -31,11 +31,15 @@ class BluetoothPageState extends State<BluetoothPage> {
   final Guid serviceUUID = Guid('c07b8cf2-b8ff-4ef4-b4e1-dd8aa2415f81');
   final Guid characteristicUUID = Guid('5e6525b1-4a90-4baf-a4a1-9b4a53641970');
 
+  bool locationEnabled = false;
+
   @override
   void initState() {
     super.initState();
     initiateBluetooth();
     _getDataFromAllConnectedDevices();
+
+    _updateLocationStatus();
 
     messageStream.receiveBroadcastStream().listen(_onMessageListUpdate);
 
@@ -241,11 +245,34 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
+  void _toggleLocation() async {
+    final status = await platform.invokeMethod('toggleLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
+  }
+
+  void _updateLocationStatus() async {
+    final status = await platform.invokeMethod('isLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bluetooth Page'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.location_on,
+              color: locationEnabled ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleLocation,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -267,7 +294,7 @@ class BluetoothPageState extends State<BluetoothPage> {
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 
-                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != null) {
+                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != 0) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
                   timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} away';
                 }else if (message.timeSent != null && message.timeReceived != null) {

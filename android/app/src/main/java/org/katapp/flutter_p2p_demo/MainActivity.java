@@ -73,6 +73,13 @@ public class MainActivity extends FlutterActivity {
                             bleGattServerManager.updateMessageList(addMessage);
                             result.success(null);
                             break;
+                        case "isLocationEnabled":
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        case "toggleLocationEnabled":
+                            LocationManager.setLocationEnabled(!LocationManager.isLocationEnabled());
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
                         default:
                             result.notImplemented();
                     }
@@ -100,6 +107,13 @@ public class MainActivity extends FlutterActivity {
 
                                 result.success(createMessage.toJson().toString());
                             }).start();
+                            break;
+                        case "isLocationEnabled":
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        case "toggleLocationEnabled":
+                            LocationManager.setLocationEnabled(!LocationManager.isLocationEnabled());
+                            result.success(LocationManager.isLocationEnabled());
                             break;
                         default:
                             result.notImplemented();

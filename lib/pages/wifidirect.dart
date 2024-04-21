@@ -36,9 +36,12 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   static const EventChannel _connectionEventChannel =
       EventChannel('org.katapp.flutter_p2p_demo.wifidirect/connection');
 
+  bool locationEnabled = false;
+
   @override
   void initState() {
     super.initState();
+    _updateLocationStatus();
     _connectionEventChannel
         .receiveBroadcastStream()
         .listen(_onConnectionChange, onError: _onError);
@@ -217,11 +220,34 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     });
   }
 
+  void _toggleLocation() async {
+    final status = await platform.invokeMethod('toggleLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
+  }
+
+  void _updateLocationStatus() async {
+    final status = await platform.invokeMethod('isLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wi-Fi Direct Page'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.location_on,
+              color: locationEnabled ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleLocation,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -244,7 +270,10 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 
-                if (message.timeSent != null && message.timeReceived != null) {
+                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != 0) {
+                  final duration = message.timeReceived!.difference(message.timeSent!);
+                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} meters away';
+                }else if (message.timeSent != null && message.timeReceived != null) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
                   timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
                 } else {

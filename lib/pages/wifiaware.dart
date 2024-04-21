@@ -164,7 +164,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 
-                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != null) {
+                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != 0) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
                   timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} meters away';
                 }else if (message.timeSent != null && message.timeReceived != null) {
