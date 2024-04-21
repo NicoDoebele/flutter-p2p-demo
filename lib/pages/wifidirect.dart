@@ -146,23 +146,25 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     }
   }
 
-  void _addMessage(Message message) {
+  void _addMessage(Message message) async {
     if (appData.contains(message)) {
       return;
     }
 
-    message.timeReceived = DateTime.now();
+    String fixedMessageString = await platform.invokeMethod('addDataToReceivedMessage', {'message': jsonEncode(message.toJson())});
+
+    Message messageWithData = Message.fromJson(jsonDecode(fixedMessageString));
 
     setState(() {
-      appData.add(message);
+      appData.add(messageWithData);
     });
 
     if (isGroupOwner && isConnected) {
       for (final client in clients) {
-        client.write(message.toJson().toString());
+        client.write(jsonEncode(messageWithData.toJson()));
       }
     } else if (isConnected) {
-      clientSocket?.write(message.toJson().toString());
+      clientSocket?.write(jsonEncode(messageWithData.toJson()));
     }
   }
 
