@@ -269,7 +269,7 @@ class BluetoothPageState extends State<BluetoothPage> {
 
                 if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != null) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
-                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} +-5 meters away';
+                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} away';
                 }else if (message.timeSent != null && message.timeReceived != null) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
                   timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';

@@ -111,7 +111,10 @@ public class Message {
 
     public void setSentLocationAsCurrent() {
         try {
-            sentLocation = LocationManager.getCurrentLocation();
+            Location location = LocationManager.getCurrentLocation();
+            if (location != null) {
+                sentLocation = location;
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -119,7 +122,10 @@ public class Message {
 
     public void setReceivedLocationAsCurrent() {
         try {
-            receivedLocation = LocationManager.getCurrentLocation();
+            Location location = LocationManager.getCurrentLocation();
+            if (location != null) {
+                receivedLocation = location;
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

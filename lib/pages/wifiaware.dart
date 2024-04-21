@@ -24,6 +24,8 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   static const EventChannel _connectionEventChannel =
       EventChannel('org.katapp.flutter_p2p_demo.wifiaware/connection');
 
+  bool locationEnabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +34,8 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       .listen(_onMessageReceived);
     //_startServerSocket();
     _init();
+
+    _updateLocationStatus();
   }
 
   @override
@@ -69,7 +73,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
 
   void _sendMessageToSubscribers(Message messasge) {
     print('Sending message to subscribers: $messasge');
-    platform.invokeMethod('sendMessageToSubscribers', {'message': messasge.toJson()});
+    platform.invokeMethod('sendMessageToSubscribers', {'message': jsonEncode(messasge.toJson())});
   }
 
   void _createMessage(String size) async {
@@ -104,8 +108,6 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       return;
     }
 
-    message.timeReceived = DateTime.now();
-
     setState(() {
       appData.add(message);
     });
@@ -113,11 +115,34 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     // _sendMessageToSubscribers(message);
   }
 
+  void _toggleLocation() async {
+    final status = await platform.invokeMethod('toggleLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
+  }
+
+  void _updateLocationStatus() async {
+    final status = await platform.invokeMethod('isLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wi-Fi Direct Page'),
+        title: const Text('Wi-Fi Aware Page'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.location_on,
+              color: locationEnabled ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleLocation,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -139,7 +164,10 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
                 List<int> jsonBytes = utf8.encode(jsonString);
                 int sizeInBytes = jsonBytes.length;
 
-                if (message.timeSent != null && message.timeReceived != null) {
+                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != null) {
+                  final duration = message.timeReceived!.difference(message.timeSent!);
+                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} meters away';
+                }else if (message.timeSent != null && message.timeReceived != null) {
                   final duration = message.timeReceived!.difference(message.timeSent!);
                   timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
                 } else {

@@ -131,8 +131,16 @@ public class MainActivity extends FlutterActivity {
                             break;
                         case "sendMessageToSubscribers":
                             String messageJsonString = call.argument("message");
+                            Log.d("WiFiAwareActivity", "Sending message to all clients: " + messageJsonString);
                             wifiAwareManager.sendDataToAllClients(messageJsonString);
                             result.success(null);
+                            break;
+                        case "isLocationEnabled":
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        case "toggleLocationEnabled":
+                            LocationManager.setLocationEnabled(!LocationManager.isLocationEnabled());
+                            result.success(LocationManager.isLocationEnabled());
                             break;
                         default:
                             result.notImplemented();

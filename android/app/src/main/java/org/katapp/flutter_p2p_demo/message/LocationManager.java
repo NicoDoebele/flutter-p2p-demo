@@ -10,12 +10,25 @@ import org.json.JSONObject;
 public class LocationManager {
     private static Location currentLocation;
     private static FusedLocationProviderClient fusedLocationClient;
+    private static boolean locationEnabled = false;
+
+    public static boolean isLocationEnabled() {
+        return locationEnabled;
+    }
+
+    public static void setLocationEnabled(boolean newLocationEnabled) {
+        locationEnabled = newLocationEnabled;
+    }
 
     public static void setFusedLocationClient(FusedLocationProviderClient newFusedLocationClient) {
         fusedLocationClient = newFusedLocationClient;
     }
 
     public static Location getCurrentLocation() throws InterruptedException {
+        if (!locationEnabled) {
+            return null;
+        }
+
         final CountDownLatch latch = new CountDownLatch(1);
 
         fusedLocationClient.getCurrentLocation(LocationRequest.PRIORITY_HIGH_ACCURACY, null)
@@ -34,6 +47,10 @@ public class LocationManager {
     }
 
     public static Location getLastKnownLocation() throws InterruptedException {
+        if (!locationEnabled) {
+            return null;
+        }
+
         final CountDownLatch latch = new CountDownLatch(1);
 
         fusedLocationClient.getLastLocation()
