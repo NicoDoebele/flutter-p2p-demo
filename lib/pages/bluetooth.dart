@@ -8,6 +8,9 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_p2p_demo/classes/Message.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// import location manager
+import 'package:flutter_p2p_demo/classes/location_manager.dart';
+
 class BluetoothPage extends StatefulWidget {
   const BluetoothPage({super.key});
 
@@ -69,8 +72,11 @@ class BluetoothPageState extends State<BluetoothPage> {
       appData.clear();
       
       List<dynamic> messageList = jsonDecode(messageListJson);
-      for (var message in messageList) {
-        appData.add(Message.fromJson(message));
+      for (var messageJson in messageList) {
+        Message message = Message.fromJson(messageJson);
+        message.receivedLocation ??= LocationManager.getCurrentLocation();
+        message.calculateDistanceBetweenLocations();
+        appData.add(message);
       }
     });
   }
@@ -203,6 +209,14 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
 
     var messageJsonString = await platform.invokeMethod('createMessage', {'size': size});
+
+    // add location
+    Message message = Message.fromJson(jsonDecode(messageJsonString));
+    message.sentLocation = LocationManager.getCurrentLocation();
+    messageJsonString = jsonEncode(message.toJson());
+
+    await platform.invokeMethod('addMessage', {'message': messageJsonString});
+
     sendDataToAllDevices(messageJsonString);
   }
 
@@ -246,14 +260,12 @@ class BluetoothPageState extends State<BluetoothPage> {
   }
 
   void _toggleLocation() async {
-    final status = await platform.invokeMethod('toggleLocationEnabled');
-    setState(() {
-      locationEnabled = status;
-    });
+    LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
+    _updateLocationStatus();
   }
 
   void _updateLocationStatus() async {
-    final status = await platform.invokeMethod('isLocationEnabled');
+    final status = LocationManager.isLocationEnabled();
     setState(() {
       locationEnabled = status;
     });

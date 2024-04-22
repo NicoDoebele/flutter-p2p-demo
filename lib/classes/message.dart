@@ -3,6 +3,8 @@ import 'dart:ffi';
 
 import 'package:flutter_p2p_demo/classes/location.dart';
 
+import 'package:geolocator/geolocator.dart';
+
 class Message {
   int id;
   String sender;
@@ -51,6 +53,23 @@ class Message {
       'distanceBetweenLocations': distanceBetweenLocations,
     };
   }
+
+  void calculateDistanceBetweenLocations() {
+    if (sentLocation == null || receivedLocation == null) {
+      return;
+    }
+
+    final locationOne = sentLocation!;
+    final locationTwo = receivedLocation!;
+
+    distanceBetweenLocations = Geolocator.distanceBetween(
+      locationOne.latitude,
+      locationOne.longitude,
+      locationTwo.latitude,
+      locationTwo.longitude,
+    );
+  }
+  
 
   @override
   bool operator ==(Object other) {

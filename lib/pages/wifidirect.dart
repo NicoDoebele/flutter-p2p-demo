@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_p2p_demo/classes/Message.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// import location manager
+import 'package:flutter_p2p_demo/classes/location_manager.dart';
+
 class WiFiDirectPage extends StatefulWidget {
   const WiFiDirectPage({super.key});
 
@@ -90,6 +93,23 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   }
 
   void _onConnectionChange(dynamic data) {
+    if (data == null) {
+      setState(() {
+        isConnected = false;
+        isGroupOwner = false;
+      });
+      // close all sockets
+      serverSocket?.close();
+      clientSocket?.close();
+      for (final client in clients) {
+        client.close();
+      }
+      serverSocket = null;
+      clientSocket = null;
+      clients.clear();
+      return;
+    }
+
     final Map<String, dynamic> connectionInfo = Map<String, dynamic>.from(data);
 
     print("Connection details received: $connectionInfo");
@@ -126,6 +146,9 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     dynamic messageJsonString = await platform.invokeMethod('createMessage', {'size': messageSize});
 
     Message message = Message.fromJson(jsonDecode(messageJsonString));
+    message.sentLocation = LocationManager.getCurrentLocation();
+
+    String newMessageJsonString = jsonEncode(message.toJson());
 
     if (appData.contains(message)) {
       return;
@@ -139,10 +162,10 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
 
     if (isGroupOwner && isConnected) {
       for (final client in clients) {
-        client.write(messageJsonString);
+        client.write(newMessageJsonString);
       }
     } else if (isConnected) {
-      clientSocket?.write(messageJsonString);
+      clientSocket?.write(newMessageJsonString);
     }
   }
 
@@ -154,6 +177,8 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     String fixedMessageString = await platform.invokeMethod('addDataToReceivedMessage', {'message': jsonEncode(message.toJson())});
 
     Message messageWithData = Message.fromJson(jsonDecode(fixedMessageString));
+    messageWithData.receivedLocation = LocationManager.getCurrentLocation();
+    messageWithData.calculateDistanceBetweenLocations();
 
     setState(() {
       appData.add(messageWithData);
@@ -171,9 +196,13 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   void _startServerSocket() async {
     serverSocket = await ServerSocket.bind(InternetAddress.anyIPv4, 8888);
     print('Hosting on: ${serverSocket?.address.address}:${serverSocket?.port}');
-    serverSocket?.listen((client) {
-      _handleClientConnection(client);
-    });
+    try {
+      serverSocket?.listen((client) {
+        _handleClientConnection(client);
+      });
+    } catch (e) {
+      print('Error: $e');
+    }
   }
 
   void _handleClientConnection(Socket client) async {
@@ -203,34 +232,36 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   }
 
   Future<void> _connectToHost(String address) async {
-    clientSocket = await Socket.connect(address, 8888);
-    print(
-        'Connected to: ${clientSocket?.remoteAddress.address}:${clientSocket?.port}');
+    try {
+      clientSocket = await Socket.connect(address, 8888);
+      print(
+          'Connected to: ${clientSocket?.remoteAddress.address}:${clientSocket?.port}');
 
-    clientSocket?.listen((data) {
-      final messageJsonString = utf8.decode(data);
-      print('Data from ${clientSocket?.remoteAddress.address}:${clientSocket?.port} - $messageJsonString');
+      clientSocket?.listen((data) {
+        final messageJsonString = utf8.decode(data);
+        print('Data from ${clientSocket?.remoteAddress.address}:${clientSocket?.port} - $messageJsonString');
 
-      try {
-        final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
-        _addMessage(message);
-        previousData = '';
-      } catch (e) {
-        print('Error: $e');
-        previousData += messageJsonString;
-      }
-    });
+        try {
+          final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
+          _addMessage(message);
+          previousData = '';
+        } catch (e) {
+          print('Error: $e');
+          previousData += messageJsonString;
+        }
+      });
+    } catch (e) {
+      print('Error: $e');
+    }
   }
 
   void _toggleLocation() async {
-    final status = await platform.invokeMethod('toggleLocationEnabled');
-    setState(() {
-      locationEnabled = status;
-    });
+    LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
+    _updateLocationStatus();
   }
 
   void _updateLocationStatus() async {
-    final status = await platform.invokeMethod('isLocationEnabled');
+    final status = LocationManager.isLocationEnabled();
     setState(() {
       locationEnabled = status;
     });

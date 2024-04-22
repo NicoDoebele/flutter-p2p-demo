@@ -59,10 +59,10 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 Message createMessage = new Message(size);
-                                createMessage.setSentLocationAsCurrent();
+                                //createMessage.setSentLocationAsCurrent();
                                 createMessage.setTimeSentAsCurrent();
 
-                                bleGattServerManager.updateMessageList(createMessage);
+                                //bleGattServerManager.updateMessageList(createMessage);
                                 result.success(createMessage.toJson().toString());
                             }).start();
                             break;
@@ -102,7 +102,7 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 Message createMessage = new Message(size);
-                                createMessage.setSentLocationAsCurrent();
+                                //createMessage.setSentLocationAsCurrent();
                                 createMessage.setTimeSentAsCurrent();
 
                                 result.success(createMessage.toJson().toString());
@@ -114,7 +114,7 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 message.setTimeReceivedAsCurrent();
-                                message.setReceivedLocationAsCurrent();
+                                //message.setReceivedLocationAsCurrent();
 
                                 result.success(message.toJson().toString());
                             }).start();
@@ -148,7 +148,7 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 Message createMessage = new Message(size);
-                                createMessage.setSentLocationAsCurrent();
+                                //createMessage.setSentLocationAsCurrent();
                                 createMessage.setTimeSentAsCurrent();
 
                                 result.success(createMessage.toJson().toString());
@@ -178,6 +178,11 @@ public class MainActivity extends FlutterActivity {
                     @Override
                     public void onListen(Object arguments, EventChannel.EventSink events) {
                         wifiDirectManager.setWiFiP2PConnectionInfoListener(info -> {
+
+                            if (info == null) {
+                                events.success(null);
+                                return;
+                            }
 
                             if (!info.groupFormed) {
                                 Log.d("WiFiDirectActivity", "Group not formed");

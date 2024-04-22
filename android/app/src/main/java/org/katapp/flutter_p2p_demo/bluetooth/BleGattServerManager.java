@@ -167,7 +167,7 @@ public class BleGattServerManager {
                     JSONObject messageJSON = new JSONObject(fullData);
                     Message message = new Message(messageJSON.toString());
                     message.setTimeReceivedAsCurrent();
-                    message.setReceivedLocationAsCurrent();
+                    //message.setReceivedLocationAsCurrent();
                     Log.d("BleGattServerManager", "Message received: " + message.toJson().toString());
                     updateMessageList(message);
                     priorData = "";

@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_p2p_demo/classes/message.dart';
 
+// import location manager
+import 'package:flutter_p2p_demo/classes/location_manager.dart';
+
 class WiFiAwarePage extends StatefulWidget {
   const WiFiAwarePage({super.key});
 
@@ -89,6 +92,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     dynamic messageJsonString = await platform.invokeMethod('createMessage', {'size': messageSize});
 
     Message message = Message.fromJson(jsonDecode(messageJsonString));
+    message.sentLocation = LocationManager.getCurrentLocation();
 
     if (appData.contains(message)) {
       return;
@@ -108,6 +112,9 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       return;
     }
 
+    message.receivedLocation = LocationManager.getCurrentLocation();
+    message.calculateDistanceBetweenLocations();
+
     setState(() {
       appData.add(message);
     });
@@ -116,14 +123,12 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   }
 
   void _toggleLocation() async {
-    final status = await platform.invokeMethod('toggleLocationEnabled');
-    setState(() {
-      locationEnabled = status;
-    });
+    LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
+    _updateLocationStatus();
   }
 
   void _updateLocationStatus() async {
-    final status = await platform.invokeMethod('isLocationEnabled');
+    final status = LocationManager.isLocationEnabled();
     setState(() {
       locationEnabled = status;
     });

@@ -40,6 +40,7 @@ public class WiFiDirectManager {
     WifiP2pDnsSdServiceRequest serviceRequest;
     WiFiP2PConnectionInfoListener wiFiP2PConnectionInfoListener;
     WifiP2pDnsSdServiceInfo serviceInfo;
+    WifiP2pInfo wifiP2pInfo;
 
     public void setWiFiP2PConnectionInfoListener(WiFiP2PConnectionInfoListener listener) {
         this.wiFiP2PConnectionInfoListener = listener;
@@ -134,6 +135,7 @@ public class WiFiDirectManager {
         }
 
         // Unregister receiver and clear lists as already implemented
+        wifiP2pInfo = null;
         context.unregisterReceiver(receiver);
         peers.clear();
         deviceMap.clear();
@@ -273,6 +275,16 @@ public class WiFiDirectManager {
 
             if (peers.size() == 0) {
                 Log.d("WiFiDirectActivity", "No service devices found");
+                if (wiFiP2PConnectionInfoListener != null) {
+                    wiFiP2PConnectionInfoListener.onConnectionInfoAvailable(null);
+                }
+
+                // start broadcasting again if stopped
+                if (wifiP2pInfo != null){
+                    Log.d("WiFiDirectActivity", "Restarting WiFi Direct");
+                    stop();
+                    start();
+                }
             }
         }
     };
@@ -281,6 +293,7 @@ public class WiFiDirectManager {
         @Override
         public void onConnectionInfoAvailable(WifiP2pInfo info) {
             if (wiFiP2PConnectionInfoListener != null) {
+                wifiP2pInfo = info;
                 wiFiP2PConnectionInfoListener.onConnectionInfoAvailable(info);
             }
         }
@@ -288,7 +301,7 @@ public class WiFiDirectManager {
 
     public void connectToFirstDevice() {
         if (peers.size() > 0) {
-            connect(peers.get(0));
+            connect(peers.get(peers.size() - 1));
         }
     }
 
@@ -307,6 +320,8 @@ public class WiFiDirectManager {
             @Override
             public void onFailure(int reason) {
                 Log.d("WiFiDirectActivity", "Connect failed. Retry.");
+                stop();
+                start();
             }
         });
     }

@@ -360,7 +360,7 @@ public class WiFiAwareManager {
 
     private void sendMessageToDart(Message message) {
         message.setTimeReceivedAsCurrent();
-        message.setReceivedLocationAsCurrent();
+        //message.setReceivedLocationAsCurrent();
         
         mainHandler.post(() -> {
             if (connectionInfoListener != null) {
