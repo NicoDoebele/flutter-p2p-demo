@@ -26,15 +26,22 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     
   static const EventChannel _connectionEventChannel =
       EventChannel('org.katapp.flutter_p2p_demo.wifiaware/connection');
+  
+  static const EventChannel _messageEventChannel = 
+      EventChannel('org.katapp.flutter_p2p_demo.wifiaware/messageStream');
 
   bool locationEnabled = false;
+  bool connected = false;
 
   @override
   void initState() {
     super.initState();
-    _connectionEventChannel
+    _messageEventChannel
       .receiveBroadcastStream()
       .listen(_onMessageReceived);
+    _connectionEventChannel
+      .receiveBroadcastStream()
+      .listen(_onConnectionChanged);
     //_startServerSocket();
     _init();
 
@@ -45,8 +52,17 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   void dispose() async {
     _controller.dispose();
     _stopWiFiAware();
+    _messageEventChannel.receiveBroadcastStream().listen(null);
     _connectionEventChannel.receiveBroadcastStream().listen(null);
     super.dispose();
+  }
+
+  void _onConnectionChanged(dynamic event) {
+    print('Connection changed: $event');
+
+    setState(() {
+      connected = event;
+    });
   }
 
   void _onMessageReceived(dynamic event) {
@@ -152,9 +168,9 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       body: Column(
         children: [
           // Displaying the number of active connections
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Text('TEXT_PLACEHOLDER'),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(connected ? 'Connected' : 'Not connected'),
           ),
           // Displaying messages from "data"
           Expanded(

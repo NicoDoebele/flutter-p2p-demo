@@ -210,14 +210,30 @@ public class MainActivity extends FlutterActivity {
                 .setStreamHandler(new EventChannel.StreamHandler() {
                     @Override
                     public void onListen(Object arguments, EventChannel.EventSink events) {
-                        wifiAwareManager.setConnectionInfoListener(message -> {
-                            events.success(message);
+                        wifiAwareManager.setConnectionInfoListener(connected -> {
+                            events.success(connected);
                         });
                     }
 
                     @Override
                     public void onCancel(Object arguments) {
                         wifiAwareManager.setConnectionInfoListener(null);
+                    }
+                });
+
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.wifiaware/messageStream")
+                .setStreamHandler(new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object arguments, EventChannel.EventSink events) {
+                        wifiAwareManager.setMessageListener(message -> {
+                            events.success(message);
+                        });
+                    }
+
+                    @Override
+                    public void onCancel(Object arguments) {
+                        wifiAwareManager.setMessageListener(null);
                     }
                 });
 

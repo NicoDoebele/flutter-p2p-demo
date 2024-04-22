@@ -39,6 +39,7 @@ import java.net.InetAddress;
 import java.util.Iterator;
 
 import org.katapp.flutter_p2p_demo.wifidirect.interfaces.WiFiAwareConnectionInfoListener;
+import org.katapp.flutter_p2p_demo.wifidirect.interfaces.WiFiAwareMessageListener;
 import org.katapp.flutter_p2p_demo.message.Message;
 
 public class WiFiAwareManager {
@@ -54,6 +55,7 @@ public class WiFiAwareManager {
     private NetworkCapabilities networkCapabilities;
     private ConnectivityManager.NetworkCallback networkCallback;
     private WiFiAwareConnectionInfoListener connectionInfoListener;
+    private WiFiAwareMessageListener messageListener;
 
     private Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -72,6 +74,10 @@ public class WiFiAwareManager {
 
     public void setConnectionInfoListener(WiFiAwareConnectionInfoListener connectionInfoListener) {
         this.connectionInfoListener = connectionInfoListener;
+    }
+
+    public void setMessageListener(WiFiAwareMessageListener messageListener) {
+        this.messageListener = messageListener;
     }
 
     private final PublishConfig publishConfig = new PublishConfig.Builder()
@@ -184,6 +190,7 @@ public class WiFiAwareManager {
         wifiAwareManager = null;
 
         connectionInfoListener = null;
+        messageListener = null;
 
         mainHandler.removeCallbacksAndMessages(null);
 
@@ -363,8 +370,8 @@ public class WiFiAwareManager {
         //message.setReceivedLocationAsCurrent();
         
         mainHandler.post(() -> {
-            if (connectionInfoListener != null) {
-                connectionInfoListener.onMessageReceived(message.toJson().toString());
+            if (messageListener != null) {
+                messageListener.onMessageReceived(message.toJson().toString());
             }
         });
     }
@@ -434,6 +441,12 @@ public class WiFiAwareManager {
                     clientSockets.clear();
                 }
 
+                mainHandler.post(() -> {
+                    if (connectionInfoListener != null) {
+                        connectionInfoListener.onConnectionChange(true);
+                    }
+                });
+
                 connectToServer();
             }
 
@@ -442,6 +455,12 @@ public class WiFiAwareManager {
                 Log.d("WiFiAwareManager", "WiFi Aware network lost");
                 // network = null;
                 // networkCapabilities = null;
+
+                mainHandler.post(() -> {
+                    if (connectionInfoListener != null) {
+                        connectionInfoListener.onConnectionChange(false);
+                    }
+                });
             }
         };
 
