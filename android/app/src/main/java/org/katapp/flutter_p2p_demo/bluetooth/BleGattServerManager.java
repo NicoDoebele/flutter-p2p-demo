@@ -18,6 +18,7 @@ import android.os.Looper;
 import org.json.JSONObject;
 import org.json.JSONException;
 import android.util.Log;
+import java.nio.ByteBuffer;
 
 import org.katapp.flutter_p2p_demo.bluetooth.interfaces.BluetoothMessageListener;
 import org.katapp.flutter_p2p_demo.bluetooth.BleAdvertisingManager;
@@ -139,6 +140,7 @@ public class BleGattServerManager {
                 BluetoothGattCharacteristic characteristic) {
             if (CHARACTERISTIC_UUID.equals(characteristic.getUuid())) {
 
+                /* 
                 List<JSONObject> jsonMessageList = new ArrayList<>();
                 for (Message message : messageList) {
                     jsonMessageList.add(message.toJson());
@@ -148,6 +150,9 @@ public class BleGattServerManager {
                 byte[] data = allData.getBytes();
 
                 gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, data);
+                */
+
+                gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, ByteBuffer.allocate(4).putInt(1).array());
             } else {
                 gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, offset, null);
             }

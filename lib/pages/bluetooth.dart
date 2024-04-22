@@ -36,11 +36,13 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   bool locationEnabled = false;
 
+  List<BluetoothDevice> knownDevices = [];
+
   @override
   void initState() {
     super.initState();
     initiateBluetooth();
-    _getDataFromAllConnectedDevices();
+    // _getDataFromAllConnectedDevices();
 
     _updateLocationStatus();
 
@@ -81,6 +83,7 @@ class BluetoothPageState extends State<BluetoothPage> {
     });
   }
 
+  /*
   void _getDataFromAllConnectedDevices() async {
     for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
       if (device.isConnected) {
@@ -88,6 +91,7 @@ class BluetoothPageState extends State<BluetoothPage> {
       }
     }
   }
+  */
 
   void initiateBluetooth() async {
     if (await FlutterBluePlus.isSupported == false) {
@@ -106,7 +110,29 @@ class BluetoothPageState extends State<BluetoothPage> {
         if (!result.device.isConnected) {
           result.device.connect();
 
-          getAllDataFromNewDevice(result.device);
+          Timer.periodic(const Duration(seconds: 2), (timer) async {
+            bool isReachable = await deviceIsReachable(result.device);
+            if (!isReachable) {
+              result.device.disconnect();
+              timer.cancel();
+            }
+          });
+
+          /*
+          var subscription = result.device.connectionState.listen((BluetoothConnectionState state) async {
+            if (state == BluetoothConnectionState.disconnected) {
+              try {
+                result.device.connect();
+              } catch (e) {
+                print('Could not reconnect to device ${result.device.remoteId}: $e');
+              }
+            }
+          });
+
+          result.device.cancelWhenDisconnected(subscription, delayed: true);
+          */
+
+          //getAllDataFromNewDevice(result.device);
           //subscribeToDeviceServive(result.device);
           //knownDevices.add(result.device);
         }
@@ -228,6 +254,7 @@ class BluetoothPageState extends State<BluetoothPage> {
     platform.invokeMethod('addMessage', {'message': message.toJson().toString()});
   }
 
+  /*
   Future<void> getAllDataFromNewDevice(BluetoothDevice device) async {
     while (!device.isConnected) {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -256,6 +283,33 @@ class BluetoothPageState extends State<BluetoothPage> {
           }
         }
       }
+    }
+  }
+  */
+
+  Future<bool> deviceIsReachable(BluetoothDevice device) async {
+    // ping device on ping uuid and get response with read request
+    while (!device.isConnected) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    try {
+      List<BluetoothService> services = await device.discoverServices();
+      for (BluetoothService service in services) {
+        for (BluetoothCharacteristic characteristic in service.characteristics) {
+          if (characteristic.uuid == characteristicUUID) {
+            print('Pinging device ${device.remoteId}');
+            List<int> data = await characteristic.read();
+            print('Received response from device ${device.remoteId}');
+            return data.isNotEmpty;
+          }
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('Failed to ping device ${device.remoteId}: $e');
+      return false;
     }
   }
 
