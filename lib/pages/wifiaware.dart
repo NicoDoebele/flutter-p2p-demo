@@ -33,8 +33,15 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   bool locationEnabled = false;
   bool connected = false;
 
+  DateTime? pageOpenTime;
+  DateTime? firstConnectionTime;
+
   @override
   void initState() {
+    setState(() {
+      pageOpenTime = DateTime.now();
+    });
+
     super.initState();
     _messageEventChannel
       .receiveBroadcastStream()
@@ -62,6 +69,10 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
 
     setState(() {
       connected = event;
+
+      if (connected && firstConnectionTime == null) {
+        firstConnectionTime = DateTime.now();
+      }
     });
   }
 
@@ -177,10 +188,15 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       ),
       body: Column(
         children: [
-          // Displaying the number of active connections
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(connected ? 'Connected' : 'Not connected'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(connected ? 'Connected' : 'Not connected'),
+                Text(firstConnectionTime != null ? "Connection Time: ${firstConnectionTime?.difference(pageOpenTime!).inSeconds} seconds" : "No connections yet"),
+              ],
+            ),
           ),
           // Displaying messages from "data"
           Expanded(

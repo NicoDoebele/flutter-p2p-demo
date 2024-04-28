@@ -33,6 +33,9 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
 
   Timer? updateTimer;
 
+  DateTime? pageOpenTime;
+  DateTime? firstConnectionTime;
+
   static const platform =
       MethodChannel('org.katapp.flutter_p2p_demo.wifidirect/controller');
 
@@ -43,6 +46,10 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
 
   @override
   void initState() {
+    setState(() {
+      pageOpenTime = DateTime.now();
+    });
+
     super.initState();
     _updateLocationStatus();
     _connectionEventChannel
@@ -120,6 +127,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     setState(() {
       isConnected = true;
       isGroupOwner = groupOwner;
+      firstConnectionTime ??= DateTime.now();
     });
 
     // Use the received information as needed
@@ -290,11 +298,15 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
       ),
       body: Column(
         children: [
-          // Displaying the number of active connections
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(
-                'Is Connected: $isConnected | Is Group Owner: $isGroupOwner'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Is Connected: $isConnected | Is Group Owner: $isGroupOwner'),
+                Text(firstConnectionTime != null ? "Connection Time: ${firstConnectionTime?.difference(pageOpenTime!).inSeconds} seconds" : "No connections yet"),
+              ],
+            ),
           ),
           // Displaying messages from "data"
           Expanded(

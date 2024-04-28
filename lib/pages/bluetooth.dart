@@ -40,8 +40,17 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   List<int> messageQueue = [];
 
+  // save time when page was opened and first connection achieved
+  DateTime? pageOpenTime;
+  DateTime? firstConnectionTime;
+
   @override
   void initState() {
+    
+    setState(() {
+      pageOpenTime = DateTime.now();
+    });
+
     super.initState();
     initiateBluetooth();
     // _getDataFromAllConnectedDevices();
@@ -121,6 +130,10 @@ class BluetoothPageState extends State<BluetoothPage> {
 
         if (!result.device.isConnected) {
           result.device.connect();
+          
+          setState(() {
+            firstConnectionTime ??= DateTime.now();
+          });
 
           Timer.periodic(const Duration(seconds: 2), (timer) async {
             bool isReachable = await deviceIsReachable(result.device);
@@ -363,6 +376,8 @@ class BluetoothPageState extends State<BluetoothPage> {
     });
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -383,7 +398,13 @@ class BluetoothPageState extends State<BluetoothPage> {
           // Displaying the number of active connections
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text('Active Connections: $activeConnections'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Active Connections: $activeConnections'),
+                Text(firstConnectionTime != null ? "Connection Time: ${firstConnectionTime?.difference(pageOpenTime!).inSeconds} seconds" : "No connections yet"),
+              ],
+            ),
           ),
           // Displaying messages from "data"
           Expanded(
