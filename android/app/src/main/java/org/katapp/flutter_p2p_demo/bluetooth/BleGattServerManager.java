@@ -19,6 +19,7 @@ import org.json.JSONObject;
 import org.json.JSONException;
 import android.util.Log;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.katapp.flutter_p2p_demo.bluetooth.interfaces.BluetoothMessageListener;
 import org.katapp.flutter_p2p_demo.bluetooth.BleAdvertisingManager;
@@ -128,6 +129,14 @@ public class BleGattServerManager {
         }
     }
 
+    private void handleMessageReceived(String message) throws JSONException {
+        JSONObject messageJSON = new JSONObject(message);
+        Message m = new Message(messageJSON.toString());
+        m.setTimeReceivedAsCurrent();
+        //m.setReceivedLocationAsCurrent();
+        updateMessageList(m);
+    }
+
     private final BluetoothGattServerCallback gattServerCallback = new BluetoothGattServerCallback() {
         @Override
         public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
@@ -166,20 +175,42 @@ public class BleGattServerManager {
                 
                 String receivedData = new String(value);
 
+                Log.d("BleGattServerManager", "Received data: " + receivedData);
+
                 String fullData = priorData + receivedData;
 
+                Log.d("BleGattServerManager", "Full data: " + fullData);
+
+                // check if message ends with delimiter %
+                if (!fullData.endsWith("%")) {
+                    priorData = fullData;
+
+                    if (responseNeeded) {
+                        gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
+                    }
+
+                    return;
+                }
+
+                priorData = "";
+
                 try {
-                    JSONObject messageJSON = new JSONObject(fullData);
-                    Message message = new Message(messageJSON.toString());
-                    message.setTimeReceivedAsCurrent();
-                    //message.setReceivedLocationAsCurrent();
-                    Log.d("BleGattServerManager", "Message received: " + message.toJson().toString());
-                    updateMessageList(message);
-                    priorData = "";
+                    String dataWithoutFinalDelimiter = fullData.substring(0, fullData.length() - 1);
+                    String[] messages = dataWithoutFinalDelimiter.split("%");
+
+                    if (messages.length == 0) {
+                        Log.d("BleGattServerManager", "Received one message: " + dataWithoutFinalDelimiter);
+                        handleMessageReceived(dataWithoutFinalDelimiter);
+                        return;
+                    }
+
+                    Log.d("BleGattServerManager", "Received multiple messages " + Arrays.toString(messages));
+
+                    for (String message : messages) {
+                        handleMessageReceived(message);
+                    }
                 } catch (JSONException e) {
                     System.out.println("Error parsing JSON");
-                    priorData += receivedData;
-                    e.printStackTrace();
                 }
 
                 if (responseNeeded) {
