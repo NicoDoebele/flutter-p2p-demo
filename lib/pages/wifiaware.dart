@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -35,6 +36,9 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
 
   DateTime? pageOpenTime;
   DateTime? firstConnectionTime;
+
+  bool automatedMessages = false;
+  Timer? automatedMessageTimer;
 
   @override
   void initState() {
@@ -171,12 +175,33 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     });
   }
 
+  void _toggleAutomaticMessages() {
+    setState(() {
+      automatedMessages = !automatedMessages;
+    });
+
+    if (automatedMessages) {
+      automatedMessageTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        _createMessage('1000');
+      });
+    } else {
+      automatedMessageTimer?.cancel();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wi-Fi Aware Page'),
         actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.timer,
+              color: automatedMessages ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleAutomaticMessages,
+          ),
           IconButton(
             icon: Icon(
               Icons.location_on,

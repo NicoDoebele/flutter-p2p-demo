@@ -36,6 +36,9 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   DateTime? pageOpenTime;
   DateTime? firstConnectionTime;
 
+  bool automatedMessages = false;
+  Timer? automatedMessageTimer;
+
   static const platform =
       MethodChannel('org.katapp.flutter_p2p_demo.wifidirect/controller');
 
@@ -281,12 +284,33 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     });
   }
 
+  void _toggleAutomaticMessages() {
+    setState(() {
+      automatedMessages = !automatedMessages;
+    });
+
+    if (automatedMessages) {
+      automatedMessageTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        _createMessage('1000');
+      });
+    } else {
+      automatedMessageTimer?.cancel();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Wi-Fi Direct Page'),
         actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.timer,
+              color: automatedMessages ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleAutomaticMessages,
+          ),
           IconButton(
             icon: Icon(
               Icons.location_on,

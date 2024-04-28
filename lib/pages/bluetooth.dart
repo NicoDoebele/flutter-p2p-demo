@@ -44,6 +44,9 @@ class BluetoothPageState extends State<BluetoothPage> {
   DateTime? pageOpenTime;
   DateTime? firstConnectionTime;
 
+  bool automatedMessages = false;
+  Timer? automatedMessageTimer;
+
   @override
   void initState() {
     
@@ -376,7 +379,19 @@ class BluetoothPageState extends State<BluetoothPage> {
     });
   }
 
+  void _toggleAutomaticMessages() {
+    setState(() {
+      automatedMessages = !automatedMessages;
+    });
 
+    if (automatedMessages) {
+      automatedMessageTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        createMessage('1000');
+      });
+    } else {
+      automatedMessageTimer?.cancel();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -384,6 +399,13 @@ class BluetoothPageState extends State<BluetoothPage> {
       appBar: AppBar(
         title: const Text('Bluetooth Page'),
         actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.timer,
+              color: automatedMessages ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleAutomaticMessages,
+          ),
           IconButton(
             icon: Icon(
               Icons.location_on,
