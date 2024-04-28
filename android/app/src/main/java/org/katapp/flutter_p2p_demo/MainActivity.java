@@ -14,6 +14,7 @@ import com.google.android.gms.location.LocationServices;
 
 import org.katapp.flutter_p2p_demo.message.Message;
 import org.katapp.flutter_p2p_demo.bluetooth.BleGattServerManager;
+import org.katapp.flutter_p2p_demo.bluetooth.BluetoothClassicManager;
 import org.katapp.flutter_p2p_demo.wifidirect.WiFiDirectManager;
 import org.katapp.flutter_p2p_demo.wifiaware.WiFiAwareManager;
 import org.katapp.flutter_p2p_demo.message.LocationManager;
@@ -21,6 +22,7 @@ import org.katapp.flutter_p2p_demo.message.LocationManager;
 public class MainActivity extends FlutterActivity {
     private static final String EVENT_CHANNEL = "org.katapp.flutter_p2p_demo/connection";
     private BleGattServerManager bleGattServerManager;
+    private BluetoothClassicManager bluetoothClassicManager;
     private WiFiDirectManager wifiDirectManager;
     private WiFiAwareManager wifiAwareManager;
     private FusedLocationProviderClient fusedLocationClient;
@@ -33,6 +35,7 @@ public class MainActivity extends FlutterActivity {
         bleGattServerManager = new BleGattServerManager(this);
         wifiDirectManager = new WiFiDirectManager(this);
         wifiAwareManager = new WiFiAwareManager(this);
+        bluetoothClassicManager = new BluetoothClassicManager(this);
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         LocationManager.setFusedLocationClient(fusedLocationClient);
     }
@@ -151,6 +154,7 @@ public class MainActivity extends FlutterActivity {
                     switch (call.method) {
                         case "start":
                             wifiAwareManager.start();
+                            bluetoothClassicManager.start();
                             result.success(null);
                             break;
                         case "stop":
