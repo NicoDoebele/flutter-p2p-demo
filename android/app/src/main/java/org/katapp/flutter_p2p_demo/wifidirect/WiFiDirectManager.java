@@ -42,6 +42,8 @@ public class WiFiDirectManager {
     WifiP2pDnsSdServiceInfo serviceInfo;
     WifiP2pInfo wifiP2pInfo;
 
+    private int pendingShutdownOperations;
+
     public void setWiFiP2PConnectionInfoListener(WiFiP2PConnectionInfoListener listener) {
         this.wiFiP2PConnectionInfoListener = listener;
     }
@@ -54,6 +56,15 @@ public class WiFiDirectManager {
     }
 
     public void start() {
+        while (pendingShutdownOperations > 0) {
+            Log.d("WiFiDirectActivity", "Waiting for shutdown to complete");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Log.e("WiFiDirectActivity", "Interrupted while waiting for shutdown to complete", e);
+            }
+        }
+
         manager = (WifiP2pManager) context.getSystemService(Context.WIFI_P2P_SERVICE);
         channel = manager.initialize(context, Looper.getMainLooper(), null);
 
@@ -74,85 +85,88 @@ public class WiFiDirectManager {
         Log.d("WiFiDirectActivity", "WiFi Direct initialized");
     }
 
+    
+
     public void stop() {
-        try {
-            if (manager != null && channel != null) {
-                manager.requestGroupInfo(channel, group -> {
-                    if (group != null) {
-                        manager.removeGroup(channel, new ActionListener() {
-                            @Override
-                            public void onSuccess() {
-                                Log.d("WiFiDirectActivity", "Removed from P2P group");
-                            }
-        
-                            @Override
-                            public void onFailure(int reason) {
-                                Log.d("WiFiDirectActivity", "Failed to remove from P2P group, reason: " + reason);
-                            }
-                        });
-                    }
-                });
-        
-                if (serviceInfo != null) {
-                    manager.removeLocalService(channel, serviceInfo, new ActionListener() {
-                        @Override
-                        public void onSuccess() {
-                            // Handle success
-                        }
+        pendingShutdownOperations = 4; // Adding one more operation for group removal
     
-                        @Override
-                        public void onFailure(int reason) {
-                            // Handle failure
-                        }
-                    });
-                    serviceInfo = null;
+        ActionListener completionListener = new ActionListener() {
+            @Override
+            public void onSuccess() {
+                synchronized (this) {
+                    pendingShutdownOperations--;
+                    checkForCompleteShutdown();
                 }
-        
-                if (serviceRequest != null) {
-                    manager.removeServiceRequest(channel, serviceRequest, new ActionListener() {
-                        @Override
-                        public void onSuccess() {
-                            // Handle success
-                        }
-    
-                        @Override
-                        public void onFailure(int reason) {
-                            // Handle failure
-                        }
-                    });
-                    serviceRequest = null;
-                }
-        
-                manager.stopPeerDiscovery(channel, new ActionListener() {
-                    @Override
-                    public void onSuccess() {
-                        // Handle success
-                    }
-    
-                    @Override
-                    public void onFailure(int reason) {
-                        // Handle failure
-                    }
-                });
             }
-        
-            if (receiver != null) {
+    
+            @Override
+            public void onFailure(int reason) {
+                synchronized (this) {
+                    pendingShutdownOperations--;
+                    Log.e("WiFiDirectActivity", "Operation failed with reason: " + reason);
+                    checkForCompleteShutdown();
+                }
+            }
+        };
+    
+        if (receiver != null) {
+            try {
                 context.unregisterReceiver(receiver);
-                receiver = null;
+            } catch (IllegalArgumentException e) {
+                Log.e("WiFiDirectActivity", "Receiver was not registered", e);
             }
-        
-            peers.clear();
-            deviceMap.clear();
-        } catch (IllegalArgumentException e) {
-            Log.e("WiFiDirectActivity", "Receiver was not registered or already unregistered", e);
-        } catch (Exception e) {
-            Log.e("WiFiDirectActivity", "Error during stopping WiFi Direct", e);
-        } finally {
-            manager = null;
-            channel = null;
+            receiver = null;
         }
+    
+        if (manager != null && channel != null) {
+            // Request current group info and remove if exists
+            manager.requestGroupInfo(channel, group -> {
+                if (group != null) {
+                    manager.removeGroup(channel, new ActionListener() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d("WiFiDirectActivity", "Removed from P2P group");
+                            synchronized (this) {
+                                pendingShutdownOperations--;
+                                checkForCompleteShutdown();
+                            }
+                        }
+        
+                        @Override
+                        public void onFailure(int reason) {
+                            Log.e("WiFiDirectActivity", "Failed to remove from P2P group, reason: " + reason);
+                            synchronized (this) {
+                                pendingShutdownOperations--;
+                                checkForCompleteShutdown();
+                            }
+                        }
+                    });
+                } else {
+                    synchronized (this) {
+                        pendingShutdownOperations--; // No group to remove, decrement counter
+                        checkForCompleteShutdown();
+                    }
+                }
+            });
+    
+            // Other cleanup operations
+            manager.removeLocalService(channel, serviceInfo, completionListener);
+            manager.removeServiceRequest(channel, serviceRequest, completionListener);
+            manager.stopPeerDiscovery(channel, completionListener);
+        }
+        serviceInfo = null;
+        serviceRequest = null;
+        peers.clear();
+        deviceMap.clear();
     }
     
+    private void checkForCompleteShutdown() {
+        if (pendingShutdownOperations == 0) {
+            manager = null;
+            channel = null;
+            Log.d("WiFiDirectActivity", "All resources cleared and manager, channel set to null");
+        }
+    }
 
     private void registerService() {
         Map<String, String> record = new HashMap();
@@ -196,6 +210,11 @@ public class WiFiDirectManager {
                 Log.d("WiFiDirectActivity", "DnsSdTxtRecord available -" + record.toString());
                 if ("_katapp._tcp".equals(fullDomainName)) {
                     deviceMap.put(device.deviceAddress, device);
+                    if (!peers.contains(device)) {
+                        peers.add(device);
+                        connectToFirstDevice(); // if Service is found later than peer add manually
+                    }
+                    Log.d("WiFiDirectActivity", "Service discovery success, added peer: " + device.deviceName);
                 }
             }
         };
@@ -206,11 +225,11 @@ public class WiFiDirectManager {
                     WifiP2pDevice device) {
                 if (instanceName.equalsIgnoreCase("_katappwifidirectservice")) {
                     deviceMap.put(device.deviceAddress, device);
-                    if (!peers.contains(device))
-                        peers.add(device); // if Service is found later than peer add manually
+                    if (!peers.contains(device)) {
+                        peers.add(device);
+                        connectToFirstDevice(); // if Service is found later than peer add manually
+                    }
                     Log.d("WiFiDirectActivity", "Service discovery success, added peer: " + device.deviceName);
-
-                    connectToFirstDevice();
                 }
             }
         };
@@ -295,8 +314,28 @@ public class WiFiDirectManager {
                 // start broadcasting again if stopped
                 if (wifiP2pInfo != null){
                     Log.d("WiFiDirectActivity", "Restarting WiFi Direct");
-                    stop();
-                    start();
+                    
+                    // if group exsist remove it
+                    manager.requestGroupInfo(channel, group -> {
+                        if (group != null) {
+                            manager.removeGroup(channel, new ActionListener() {
+                                @Override
+                                public void onSuccess() {
+                                    Log.d("WiFiDirectActivity", "Removed from P2P group");
+                                    discoverPeers();
+                                }
+                
+                                @Override
+                                public void onFailure(int reason) {
+                                    Log.e("WiFiDirectActivity", "Failed to remove from P2P group, reason: " + reason);
+                                }
+                            });
+                        } else {
+                            discoverPeers();
+                        }
+
+                        wifiP2pInfo = null;
+                    });
                 }
             }
         }
@@ -313,6 +352,7 @@ public class WiFiDirectManager {
     };
 
     public void connectToFirstDevice() {
+        Log.d("WiFiDirectActivity", "Peers size: " + peers.size());
         if (peers.size() > 0) {
             connect(peers.get(peers.size() - 1));
         }
@@ -333,8 +373,7 @@ public class WiFiDirectManager {
             @Override
             public void onFailure(int reason) {
                 Log.d("WiFiDirectActivity", "Connect failed. Retry.");
-                stop();
-                start();
+                connectToFirstDevice();
             }
         });
     }

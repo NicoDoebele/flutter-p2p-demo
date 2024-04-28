@@ -57,7 +57,7 @@ public class WiFiAwareManager {
     private WiFiAwareConnectionInfoListener connectionInfoListener;
     private WiFiAwareMessageListener messageListener;
 
-    private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private Handler mainHandler;
 
     private ServerSocket serverSocket;
     private List<Socket> subscribers = new ArrayList<>();
@@ -100,6 +100,8 @@ public class WiFiAwareManager {
             Log.d("WiFiAwareManager", "WiFi Aware is not available");
             return;
         }
+
+        mainHandler = new Handler(Looper.getMainLooper());
 
         createSocket();
 
@@ -386,12 +388,13 @@ public class WiFiAwareManager {
     private void sendMessageToDart(Message message) {
         message.setTimeReceivedAsCurrent();
         //message.setReceivedLocationAsCurrent();
-        
-        mainHandler.post(() -> {
-            if (messageListener != null) {
-                messageListener.onMessageReceived(message.toJson().toString());
-            }
-        });
+        if (mainHandler != null) {
+            mainHandler.post(() -> {
+                if (messageListener != null) {
+                    messageListener.onMessageReceived(message.toJson().toString());
+                }
+            });
+        }
     }
     
     private boolean isJsonComplete(StringBuilder partialMessage, int start, int end) {
@@ -459,11 +462,13 @@ public class WiFiAwareManager {
                     clientSockets.clear();
                 }
 
-                mainHandler.post(() -> {
-                    if (connectionInfoListener != null) {
-                        connectionInfoListener.onConnectionChange(true);
-                    }
-                });
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (connectionInfoListener != null) {
+                            connectionInfoListener.onConnectionChange(true);
+                        }
+                    });
+                }
 
                 connectToServer();
             }
@@ -474,11 +479,13 @@ public class WiFiAwareManager {
                 // network = null;
                 // networkCapabilities = null;
 
-                mainHandler.post(() -> {
-                    if (connectionInfoListener != null) {
-                        connectionInfoListener.onConnectionChange(false);
-                    }
-                });
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (connectionInfoListener != null) {
+                            connectionInfoListener.onConnectionChange(false);
+                        }
+                    });
+                }
             }
         };
 

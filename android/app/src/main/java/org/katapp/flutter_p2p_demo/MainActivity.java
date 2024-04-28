@@ -168,6 +168,17 @@ public class MainActivity extends FlutterActivity {
                                 result.success(createMessage.toJson().toString());
                             }).start();
                             break;
+                        case "addDataToReceivedMessage":
+                            String messageString = call.argument("message");
+                            Message message = new Message(messageString);
+
+                            new Thread(() -> {
+                                message.setTimeReceivedAsCurrent();
+                                message.setReceivedLocationAsCurrent();
+
+                                result.success(message.toJson().toString());
+                            }).start();
+                            break;
                         case "sendMessageToSubscribers":
                             String messageJsonString = call.argument("message");
                             Log.d("WiFiAwareActivity", "Sending message to all clients: " + messageJsonString);
