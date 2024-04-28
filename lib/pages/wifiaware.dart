@@ -108,7 +108,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     dynamic messageJsonString = await platform.invokeMethod('createMessage', {'size': messageSize});
 
     Message message = Message.fromJson(jsonDecode(messageJsonString));
-    message.sentLocation = LocationManager.getCurrentLocation();
+    //message.sentLocation = LocationManager.getCurrentLocation();
 
     if (appData.contains(message)) {
       return;
@@ -123,28 +123,38 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     _sendMessageToSubscribers(message);
   }
 
-  void _addMessage(Message message) {
+  void _addMessage(Message message) async {
     if (appData.contains(message)) {
       return;
     }
 
-    message.receivedLocation = LocationManager.getCurrentLocation();
-    message.calculateDistanceBetweenLocations();
+    String fixedMessageString = await platform.invokeMethod('addDataToReceivedMessage', {'message': jsonEncode(message.toJson())});
+
+    //message.receivedLocation = LocationManager.getCurrentLocation();
+    //message.calculateDistanceBetweenLocations();
+
+    Message fullDataMessage = Message.fromJson(jsonDecode(fixedMessageString));
 
     setState(() {
-      appData.add(message);
+      appData.add(fullDataMessage);
     });
 
     // _sendMessageToSubscribers(message);
   }
 
   void _toggleLocation() async {
-    LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
-    _updateLocationStatus();
+    //LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
+    //_updateLocationStatus();
+
+    dynamic status = await platform.invokeMethod('toggleLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
   }
 
   void _updateLocationStatus() async {
-    final status = LocationManager.isLocationEnabled();
+    //final status = LocationManager.isLocationEnabled();
+    dynamic status = await platform.invokeMethod('isLocationEnabled');
     setState(() {
       locationEnabled = status;
     });

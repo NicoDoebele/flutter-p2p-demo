@@ -85,6 +85,10 @@ public class Message {
         return sender;
     }
 
+    public static String getSenderRandom() {
+        return senderRandom;
+    }
+
     public Date getTimeSent() {
         return timeSent;
     }

@@ -146,7 +146,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     dynamic messageJsonString = await platform.invokeMethod('createMessage', {'size': messageSize});
 
     Message message = Message.fromJson(jsonDecode(messageJsonString));
-    message.sentLocation = LocationManager.getCurrentLocation();
+    //message.sentLocation = LocationManager.getCurrentLocation();
 
     String newMessageJsonString = jsonEncode(message.toJson());
 
@@ -177,8 +177,8 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     String fixedMessageString = await platform.invokeMethod('addDataToReceivedMessage', {'message': jsonEncode(message.toJson())});
 
     Message messageWithData = Message.fromJson(jsonDecode(fixedMessageString));
-    messageWithData.receivedLocation = LocationManager.getCurrentLocation();
-    messageWithData.calculateDistanceBetweenLocations();
+    //messageWithData.receivedLocation = LocationManager.getCurrentLocation();
+    //messageWithData.calculateDistanceBetweenLocations();
 
     setState(() {
       appData.add(messageWithData);
@@ -256,12 +256,18 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   }
 
   void _toggleLocation() async {
-    LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
-    _updateLocationStatus();
+    //LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
+    //_updateLocationStatus();
+
+    dynamic status = await platform.invokeMethod('toggleLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
   }
 
   void _updateLocationStatus() async {
-    final status = LocationManager.isLocationEnabled();
+    //final status = LocationManager.isLocationEnabled();
+    dynamic status = await platform.invokeMethod('isLocationEnabled');
     setState(() {
       locationEnabled = status;
     });

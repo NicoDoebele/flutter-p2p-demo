@@ -59,11 +59,25 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 Message createMessage = new Message(size);
-                                //createMessage.setSentLocationAsCurrent();
+                                createMessage.setSentLocationAsCurrent();
                                 createMessage.setTimeSentAsCurrent();
 
                                 //bleGattServerManager.updateMessageList(createMessage);
                                 result.success(createMessage.toJson().toString());
+                            }).start();
+                            break;
+                        case "addDataToReceivedMessage":
+                            String messageString = call.argument("message");
+                            Message message = new Message(messageString);
+
+                            new Thread(() -> {
+                                if (!message.getSender().equals(android.os.Build.MODEL + " :: " + Message.getSenderRandom())) {
+                                    // if message is not from this device, add the received time and location
+                                    message.setTimeReceivedAsCurrent();
+                                    message.setReceivedLocationAsCurrent();
+                                }
+
+                                result.success(message.toJson().toString());
                             }).start();
                             break;
                         case "addMessage":
@@ -102,7 +116,7 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 Message createMessage = new Message(size);
-                                //createMessage.setSentLocationAsCurrent();
+                                createMessage.setSentLocationAsCurrent();
                                 createMessage.setTimeSentAsCurrent();
 
                                 result.success(createMessage.toJson().toString());
@@ -114,7 +128,7 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 message.setTimeReceivedAsCurrent();
-                                //message.setReceivedLocationAsCurrent();
+                                message.setReceivedLocationAsCurrent();
 
                                 result.success(message.toJson().toString());
                             }).start();
@@ -148,7 +162,7 @@ public class MainActivity extends FlutterActivity {
 
                             new Thread(() -> {
                                 Message createMessage = new Message(size);
-                                //createMessage.setSentLocationAsCurrent();
+                                createMessage.setSentLocationAsCurrent();
                                 createMessage.setTimeSentAsCurrent();
 
                                 result.success(createMessage.toJson().toString());

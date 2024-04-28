@@ -75,71 +75,84 @@ public class WiFiDirectManager {
     }
 
     public void stop() {
-        // Check if Wi-Fi P2P is not null
-        if (manager != null && channel != null) {
-            // Leave any active P2P group
-            manager.removeGroup(channel, new ActionListener() {
-                @Override
-                public void onSuccess() {
-                    Log.d("WiFiDirectActivity", "Removed from P2P group");
+        try {
+            if (manager != null && channel != null) {
+                manager.requestGroupInfo(channel, group -> {
+                    if (group != null) {
+                        manager.removeGroup(channel, new ActionListener() {
+                            @Override
+                            public void onSuccess() {
+                                Log.d("WiFiDirectActivity", "Removed from P2P group");
+                            }
+        
+                            @Override
+                            public void onFailure(int reason) {
+                                Log.d("WiFiDirectActivity", "Failed to remove from P2P group, reason: " + reason);
+                            }
+                        });
+                    }
+                });
+        
+                if (serviceInfo != null) {
+                    manager.removeLocalService(channel, serviceInfo, new ActionListener() {
+                        @Override
+                        public void onSuccess() {
+                            // Handle success
+                        }
+    
+                        @Override
+                        public void onFailure(int reason) {
+                            // Handle failure
+                        }
+                    });
+                    serviceInfo = null;
                 }
-
-                @Override
-                public void onFailure(int reason) {
-                    Log.d("WiFiDirectActivity", "Failed to remove from P2P group");
+        
+                if (serviceRequest != null) {
+                    manager.removeServiceRequest(channel, serviceRequest, new ActionListener() {
+                        @Override
+                        public void onSuccess() {
+                            // Handle success
+                        }
+    
+                        @Override
+                        public void onFailure(int reason) {
+                            // Handle failure
+                        }
+                    });
+                    serviceRequest = null;
                 }
-            });
-
-            // Remove local service
-            if (serviceInfo != null) {
-                manager.removeLocalService(channel, serviceInfo, new ActionListener() {
+        
+                manager.stopPeerDiscovery(channel, new ActionListener() {
                     @Override
                     public void onSuccess() {
-                        Log.d("WiFiDirectActivity", "Local service removed");
+                        // Handle success
                     }
-
+    
                     @Override
                     public void onFailure(int reason) {
-                        Log.d("WiFiDirectActivity", "Failed to remove local service");
+                        // Handle failure
                     }
                 });
             }
-
-            // Remove service discovery request
-            if (serviceRequest != null) {
-                manager.removeServiceRequest(channel, serviceRequest, new ActionListener() {
-                    @Override
-                    public void onSuccess() {
-                        Log.d("WiFiDirectActivity", "Service discovery request removed");
-                    }
-
-                    @Override
-                    public void onFailure(int reason) {
-                        Log.d("WiFiDirectActivity", "Failed to remove service discovery request");
-                    }
-                });
+        
+            if (receiver != null) {
+                context.unregisterReceiver(receiver);
+                receiver = null;
             }
-
-            // Stop service discovery
-            manager.stopPeerDiscovery(channel, new ActionListener() {
-                @Override
-                public void onSuccess() {
-                    Log.d("WiFiDirectActivity", "Stopped peer discovery");
-                }
-
-                @Override
-                public void onFailure(int reason) {
-                    Log.d("WiFiDirectActivity", "Failed to stop peer discovery");
-                }
-            });
+        
+            peers.clear();
+            deviceMap.clear();
+        } catch (IllegalArgumentException e) {
+            Log.e("WiFiDirectActivity", "Receiver was not registered or already unregistered", e);
+        } catch (Exception e) {
+            Log.e("WiFiDirectActivity", "Error during stopping WiFi Direct", e);
+        } finally {
+            manager = null;
+            channel = null;
         }
-
-        // Unregister receiver and clear lists as already implemented
-        wifiP2pInfo = null;
-        context.unregisterReceiver(receiver);
-        peers.clear();
-        deviceMap.clear();
     }
+    
 
     private void registerService() {
         Map<String, String> record = new HashMap();

@@ -128,75 +128,93 @@ public class WiFiAwareManager {
     }
 
     public void stop() {
-
         if (serverSocket != null) {
             try {
                 serverSocket.close();
             } catch (Exception e) {
-                Log.d("WiFiAwareManager", "Error closing server socket");
+                Log.d("WiFiAwareManager", "Error closing server socket", e);
             }
+            serverSocket = null;
         }
-
+    
+        try {
+            if (serverThread != null) {
+                serverThread.interrupt();
+                serverThread.join(1000);  // Wait for 1 second for thread to stop
+                serverThread = null;
+            }
+        } catch (InterruptedException e) {
+            Log.e("WiFiAwareManager", "Interrupted while stopping server thread", e);
+        }
+    
         for (Socket subscriber : subscribers) {
             try {
                 subscriber.close();
             } catch (Exception e) {
-                Log.d("WiFiAwareManager", "Error closing subscriber socket");
+                Log.d("WiFiAwareManager", "Error closing subscriber socket", e);
             }
         }
-
+        subscribers.clear();
+    
         for (Socket clientSocket : clientSockets) {
             try {
                 clientSocket.close();
             } catch (Exception e) {
-                Log.d("WiFiAwareManager", "Error closing client socket");
+                Log.d("WiFiAwareManager", "Error closing client socket", e);
             }
         }
-
-        for (Thread clientThread : clientThreads) {
-            clientThread.interrupt();
-        }
-
-        serverThread.interrupt();
-        serverSocket = null;
-        serverThread = null;
-
-        clientThreads.clear();
-        subscribers.clear();
         clientSockets.clear();
-
-        if (network != null) {
-            connectivityManager.unregisterNetworkCallback(networkCallback);
-            network = null;
+    
+        for (Thread clientThread : clientThreads) {
+            if (clientThread != null) {
+                clientThread.interrupt();
+                try {
+                    clientThread.join(1000); // Wait for thread to stop
+                } catch (InterruptedException e) {
+                    Log.e("WiFiAwareManager", "Interrupted while stopping client thread", e);
+                }
+            }
         }
-
+        clientThreads.clear();
+    
+        if (networkCallback != null && connectivityManager != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+            networkCallback = null;
+        }
+    
         if (publishSession != null) {
             publishSession.close();
             publishSession = null;
         }
-
+    
         if (subscribeSession != null) {
             subscribeSession.close();
             subscribeSession = null;
         }
-
+    
         if (session != null) {
             session.close();
             session = null;
         }
-
-        context.unregisterReceiver(receiver);
-
+    
+        if (context != null) {
+            context.unregisterReceiver(receiver);
+            receiver = null;
+        }
+    
         wifiAwareManager = null;
-
+        connectivityManager = null;
+        network = null;
+        networkCapabilities = null;
         connectionInfoListener = null;
         messageListener = null;
-
+    
         mainHandler.removeCallbacksAndMessages(null);
-
-        Log.d("WiFiAwareManager", "WiFi Aware stopped");
+        mainHandler = null;
+    
+        Log.d("WiFiAwareManager", "WiFi Aware stopped and resources released");
     }
-
+    
     private void startPublishing() {
         if (session == null) {
             return;

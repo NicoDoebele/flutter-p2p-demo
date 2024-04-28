@@ -71,17 +71,27 @@ class BluetoothPageState extends State<BluetoothPage> {
     super.dispose();
   }
 
-  void _onMessageListUpdate(dynamic messageListJson) {
-    setState(() {
-      appData.clear();
-      
-      List<dynamic> messageList = jsonDecode(messageListJson);
-      for (var messageJson in messageList) {
-        Message message = Message.fromJson(messageJson);
-        message.receivedLocation ??= LocationManager.getCurrentLocation();
-        message.calculateDistanceBetweenLocations();
-        appData.add(message);
+  void _onMessageListUpdate(dynamic messageListJson) async {
+
+    List<Message> newMessages = [];
+
+    List<dynamic> messageList = jsonDecode(messageListJson);
+    for (var messageJson in messageList) {
+      Message message = Message.fromJson(messageJson);
+
+      // if message not in appData, add it
+      if (!appData.contains(message)) {
+        //message.receivedLocation ??= LocationManager.getCurrentLocation();
+        dynamic fullDataMessageString = await platform.invokeMethod('addDataToReceivedMessage', {'message': jsonEncode(message.toJson())});
+
+        Message fullMessage = Message.fromJson(jsonDecode(fullDataMessageString));
+        //fullMessage.calculateDistanceBetweenLocations();
+        newMessages.add(fullMessage);
       }
+    }
+
+    setState(() {      
+      appData.addAll(newMessages);
     });
   }
 
@@ -259,9 +269,9 @@ class BluetoothPageState extends State<BluetoothPage> {
     var messageJsonString = await platform.invokeMethod('createMessage', {'size': size});
 
     // add location
-    Message message = Message.fromJson(jsonDecode(messageJsonString));
-    message.sentLocation = LocationManager.getCurrentLocation();
-    messageJsonString = jsonEncode(message.toJson());
+    //Message message = Message.fromJson(jsonDecode(messageJsonString));
+    //message.sentLocation = LocationManager.getCurrentLocation();
+    //messageJsonString = jsonEncode(message.toJson());
 
     await platform.invokeMethod('addMessage', {'message': messageJsonString});
 
@@ -336,12 +346,18 @@ class BluetoothPageState extends State<BluetoothPage> {
   }
 
   void _toggleLocation() async {
-    LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
-    _updateLocationStatus();
+    //LocationManager.updateLocationStatus(!LocationManager.isLocationEnabled());
+    //_updateLocationStatus();
+
+    dynamic status = await platform.invokeMethod('toggleLocationEnabled');
+    setState(() {
+      locationEnabled = status;
+    });
   }
 
   void _updateLocationStatus() async {
-    final status = LocationManager.isLocationEnabled();
+    //final status = LocationManager.isLocationEnabled();
+    dynamic status = await platform.invokeMethod('isLocationEnabled');
     setState(() {
       locationEnabled = status;
     });
