@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_p2p_demo/pages/bluetooth.dart';
 import 'package:flutter_p2p_demo/pages/wifidirect.dart';
 import 'package:flutter_p2p_demo/pages/wifiaware.dart';
+import 'package:flutter_p2p_demo/pages/bluetooth_classic.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,7 +46,17 @@ class MainPage extends StatelessWidget {
                       builder: (context) => const BluetoothPage()),
                 );
               },
-              child: const Text('Go to Bluetooth Page'),
+              child: const Text('Go to Bluetooth Low Energy Page'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const BluetoothClassicPage()),
+                );
+              },
+              child: const Text('Go to Bluetooth Classic Page'),
             ),
             const SizedBox(height: 20), // Adds space between the two buttons.
             ElevatedButton(

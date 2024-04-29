@@ -101,6 +101,58 @@ public class MainActivity extends FlutterActivity {
                             result.notImplemented();
                     }
                 });
+        
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.bluetooth_classic/controller")
+                .setMethodCallHandler((call, result) -> {
+                    switch (call.method) {
+                        case "start":
+                            bluetoothClassicManager.start();
+                            result.success(null);
+                            break;
+                        case "stop":
+                            bluetoothClassicManager.stop();
+                            result.success(null);
+                            break;
+                        case "createMessage":
+                            Integer size = call.argument("size");
+
+                            new Thread(() -> {
+                                Message createMessage = new Message(size);
+                                createMessage.setSentLocationAsCurrent();
+                                createMessage.setTimeSentAsCurrent();
+
+                                result.success(createMessage.toJson().toString());
+                            }).start();
+                            break;
+                        case "addDataToReceivedMessage":
+                            String messageString = call.argument("message");
+                            Message message = new Message(messageString);
+
+                            new Thread(() -> {
+                                message.setTimeReceivedAsCurrent();
+                                message.setReceivedLocationAsCurrent();
+
+                                result.success(message.toJson().toString());
+                            }).start();
+                            break;
+                        case "sendMessage":
+                            String messageJsonString = call.argument("message");
+                            Log.d("WiFiAwareActivity", "Sending message to all clients: " + messageJsonString);
+                            bluetoothClassicManager.sendMessage(messageJsonString);
+                            result.success(null);
+                            break;
+                        case "isLocationEnabled":
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        case "toggleLocationEnabled":
+                            LocationManager.setLocationEnabled(!LocationManager.isLocationEnabled());
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        default:
+                            result.notImplemented();
+                    }
+                });
 
         new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
                 "org.katapp.flutter_p2p_demo.wifidirect/controller")
@@ -154,7 +206,6 @@ public class MainActivity extends FlutterActivity {
                     switch (call.method) {
                         case "start":
                             wifiAwareManager.start();
-                            bluetoothClassicManager.start();
                             result.success(null);
                             break;
                         case "stop":
@@ -185,7 +236,7 @@ public class MainActivity extends FlutterActivity {
                             break;
                         case "sendMessageToSubscribers":
                             String messageJsonString = call.argument("message");
-                            Log.d("WiFiAwareActivity", "Sending message to all clients: " + messageJsonString);
+                            Log.d("BluetoothClassicActivity", "Sending message client: " + messageJsonString);
                             wifiAwareManager.sendDataToAllClients(messageJsonString);
                             result.success(null);
                             break;
@@ -198,6 +249,38 @@ public class MainActivity extends FlutterActivity {
                             break;
                         default:
                             result.notImplemented();
+                    }
+                });
+
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.bluetooth_classic/connection")
+                .setStreamHandler(new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object arguments, EventChannel.EventSink events) {
+                        bluetoothClassicManager.setBluetoothClassicConnectionListener(connected -> {
+                            events.success(connected);
+                        });
+                    }
+
+                    @Override
+                    public void onCancel(Object arguments) {
+                        bluetoothClassicManager.setBluetoothClassicConnectionListener(null);
+                    }
+                });
+
+        new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.bluetooth_classic/message")
+                .setStreamHandler(new EventChannel.StreamHandler() {
+                    @Override
+                    public void onListen(Object arguments, EventChannel.EventSink events) {
+                        bluetoothClassicManager.setBluetoothClassicMessageListener(message -> {
+                            events.success(message);
+                        });
+                    }
+
+                    @Override
+                    public void onCancel(Object arguments) {
+                        bluetoothClassicManager.setBluetoothClassicMessageListener(null);
                     }
                 });
 
