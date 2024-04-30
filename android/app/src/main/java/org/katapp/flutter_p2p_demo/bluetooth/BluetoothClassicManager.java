@@ -44,6 +44,8 @@ public class BluetoothClassicManager {
 
     private Handler mainHandler;
 
+    private String fullMessage = "";
+
     public BluetoothClassicManager(Context context) {
         this.context = context;
     }
@@ -127,11 +129,13 @@ public class BluetoothClassicManager {
     public void manageBluetoothSocket(BluetoothSocket socket) {
         if (this.socket == null) {
             this.socket = socket;
-            mainHandler.post(() -> {
-                if (connectionListener != null) {
-                    connectionListener.onConnectionStateChanged(true);
-                }
-            });
+            if (mainHandler != null) {
+                mainHandler.post(() -> {
+                    if (connectionListener != null) {
+                        connectionListener.onConnectionStateChanged(true);
+                    }
+                });
+            }
             startReading();
             Log.d("BluetoothClassic", "Connected to device: " + socket.getRemoteDevice().getName() + " " + socket.getRemoteDevice().getAddress());
             return;
@@ -139,6 +143,27 @@ public class BluetoothClassicManager {
 
         closeSocket();
         Log.d("Bluetooth", "Connected to device: " + socket.getRemoteDevice().getName() + " " + socket.getRemoteDevice().getAddress() + " already connected, socket closed");
+    }
+
+    private void handleLongMessageRead(String message) {
+        fullMessage += message;
+        
+        if (fullMessage.endsWith("%")) {
+            String fullMessageString = fullMessage.substring(0, fullMessage.length() - 1);
+            fullMessage = "";
+
+            String[] splitStrings = fullMessageString.split("%");
+
+            for (String splitString : splitStrings) {
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (messageListener != null) {
+                            messageListener.onMessageReceived(splitString);
+                        }
+                    });
+                }
+            }
+        }
     }
 
     private void startReading() {
@@ -150,18 +175,16 @@ public class BluetoothClassicManager {
 
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
                     String message = new String(buffer, 0, bytesRead);
+                    handleLongMessageRead(message);
+                }
+            } catch (IOException e) {
+                if (mainHandler != null) {
                     mainHandler.post(() -> {
-                        if (messageListener != null) {
-                            messageListener.onMessageReceived(message);
+                        if (connectionListener != null) {
+                            connectionListener.onConnectionStateChanged(false);
                         }
                     });
                 }
-            } catch (IOException e) {
-                mainHandler.post(() -> {
-                    if (connectionListener != null) {
-                        connectionListener.onConnectionStateChanged(false);
-                    }
-                });
                 Log.e("BluetoothClassic", "Error reading from socket: " + e.getMessage());
                 closeSocket();
             }
@@ -173,7 +196,7 @@ public class BluetoothClassicManager {
         if (socket != null) {
             try {
                 OutputStream outputStream = socket.getOutputStream();
-                outputStream.write(message.getBytes());
+                outputStream.write((message + "%").getBytes());
             } catch (IOException e) {
                 Log.e("BluetoothClassic", "Error writing to socket: " + e.getMessage());
             }
