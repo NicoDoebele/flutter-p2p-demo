@@ -194,13 +194,15 @@ public class BluetoothClassicManager {
 
     public void sendMessage(String message) {
         if (socket != null) {
-            try {
-                OutputStream outputStream = socket.getOutputStream();
-                outputStream.write((message + "%").getBytes());
-            } catch (IOException e) {
-                Log.e("BluetoothClassic", "Error writing to socket: " + e.getMessage());
-            }
-            Log.d("BluetoothClassic", "Sent message: " + message);
+            new Thread(() -> {
+                try {
+                    OutputStream outputStream = socket.getOutputStream();
+                    outputStream.write((message + "%").getBytes());
+                } catch (IOException e) {
+                    Log.e("BluetoothClassic", "Error writing to socket: " + e.getMessage());
+                }
+                Log.d("BluetoothClassic", "Sent message: " + message);
+            }).start();
         }
     }
 
