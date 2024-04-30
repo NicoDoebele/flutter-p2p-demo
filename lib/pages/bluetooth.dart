@@ -226,7 +226,7 @@ class BluetoothPageState extends State<BluetoothPage> {
       int chunk = characteristic.device.mtuNow - 5; // 3 + 2 bytes ble overhead
       for (int i = 0; i < value.length; i += chunk) {
         List<int> subvalue = value.sublist(i, min(i + chunk, value.length));
-        await characteristic.write(subvalue, withoutResponse:false, timeout: timeout, allowLongWrite: true);
+        characteristic.write(subvalue, withoutResponse: true, timeout: timeout);
       }
       Future.delayed(const Duration(milliseconds: 100), () {
         _sendSplitWriteQueue(characteristic);
