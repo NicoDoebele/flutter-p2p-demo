@@ -127,12 +127,18 @@ class BluetoothPageState extends State<BluetoothPage> {
     await Permission.bluetoothAdvertise.request();
     await Permission.location.request();
 
-    var subscription = FlutterBluePlus.onScanResults.listen((results) {
+    var subscription = FlutterBluePlus.onScanResults.listen((results) async {
       if (results.isNotEmpty) {
         ScanResult result = results.last;
 
         if (!result.device.isConnected) {
           result.device.connect();
+
+          while (!result.device.isConnected) {
+            await Future.delayed(const Duration(milliseconds: 50));
+          }
+
+          result.device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
           
           setState(() {
             firstConnectionTime ??= DateTime.now();
