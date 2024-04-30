@@ -283,6 +283,12 @@ public class WiFiDirectManager {
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
             Collection<WifiP2pDevice> refreshedPeers = peerList.getDeviceList();
             // Filter peers to include only those that offer the same service
+            Log.d("WiFiDirectActivity", "Peer list changed. Amount of peers: " + refreshedPeers.size());
+
+            for (WifiP2pDevice peer : refreshedPeers) {
+                Log.d("WiFiDirectActivity", "Peer: " + peer.deviceName + " " + peer.deviceAddress);
+            }
+
             List<WifiP2pDevice> filteredPeers = new ArrayList<>();
             for (WifiP2pDevice device : refreshedPeers) {
                 if (deviceMap.containsKey(device.deviceAddress)) {
