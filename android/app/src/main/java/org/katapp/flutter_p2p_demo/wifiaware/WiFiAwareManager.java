@@ -269,7 +269,7 @@ public class WiFiAwareManager {
 
     public void sendDataToAllClients(String messageJson) {
         new Thread(() -> {
-            sendDatatoAllClientsThread(messageJson);
+            sendDatatoAllClientsThread(messageJson + "%");
         }).start();
     }
 
@@ -320,12 +320,11 @@ public class WiFiAwareManager {
             Log.d("WiFiAwareManager", "Connected to server");
 
             Thread socketThread = new Thread(() -> {
-                StringBuilder partialMessage = new StringBuilder();
                 try (InputStream inputStream = socket.getInputStream()) {
                     byte[] data = new byte[1024];
                     int bytesRead;
                     while ((bytesRead = inputStream.read(data)) != -1) {
-                        partialMessage.append(new String(data, 0, bytesRead, StandardCharsets.UTF_8)); // Specify charset
+                        String partialMessage = new String(data, 0, bytesRead);
                         processMessages(partialMessage);
                     }
                 } catch (IOException e) {
@@ -346,43 +345,32 @@ public class WiFiAwareManager {
         }
     }
 
-    private void processMessages(StringBuilder partialMessage) {
-        int lastIndex = 0;
-        int depth = 0; // Depth counter for nested JSON
-        boolean inString = false; // Track whether currently inside a string
+    private void processMessages(String partialMessage) {
+        String data = priorData + partialMessage;
 
-        for (int i = 0; i < partialMessage.length(); i++) {
-            char c = partialMessage.charAt(i);
-
-            if (c == '"' && (i == 0 || partialMessage.charAt(i - 1) != '\\')) {
-                inString = !inString;
-            }
-
-            if (!inString) {
-                if (c == '{' || c == '[') {
-                    depth++;
-                } else if (c == '}' || c == ']') {
-                    depth--;
-                }
-            }
-
-            if ((c == '}' || c == ']') && depth == 0 && !inString) {
-                String subStr = partialMessage.substring(lastIndex, i + 1);
-                try {
-                    JSONObject messageJSON = new JSONObject(subStr);
-                    Message messageObject = new Message(messageJSON.toString());
-
-                    new Thread(() -> sendMessageToDart(messageObject)).start();
-
-                    lastIndex = i + 1;
-                } catch (JSONException e) {
-                    Log.e("WiFiAwareManager", "Malformed JSON", e);
-                    continue;
-                }
-            }
+        if (!data.endsWith("%")) {
+            priorData = data;
+            return;
         }
 
-        partialMessage.delete(0, lastIndex);
+        priorData = "";
+        data = data.substring(0, data.length() - 1);
+
+        String[] messages = data.split("%");
+
+        Log.d("WiFiAwareManager", "Messages: " + messages.length);
+
+        for (String message : messages) {
+            try {
+                JSONObject messageJSON = new JSONObject(message);
+                Message messageObject = new Message(messageJSON.toString());
+    
+                new Thread(() -> sendMessageToDart(messageObject)).start();
+            } catch (JSONException e) {
+                Log.e("WiFiAwareManager", "Malformed JSON", e);
+                continue;
+            }
+        }
     }
 
     private void sendMessageToDart(Message message) {
