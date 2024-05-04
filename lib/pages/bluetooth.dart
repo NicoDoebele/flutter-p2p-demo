@@ -395,7 +395,7 @@ class BluetoothPageState extends State<BluetoothPage> {
 
     if (automatedMessages) {
       automatedMessageTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        createMessage('1000');
+        createMessage('0');
       });
     } else {
       automatedMessageTimer?.cancel();

@@ -183,7 +183,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
 
     if (automatedMessages) {
       automatedMessageTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        _createMessage('1000');
+        _createMessage('0');
       });
     } else {
       automatedMessageTimer?.cancel();
