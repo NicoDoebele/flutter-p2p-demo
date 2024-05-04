@@ -65,6 +65,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     _stopWiFiAware();
     _messageEventChannel.receiveBroadcastStream().listen(null);
     _connectionEventChannel.receiveBroadcastStream().listen(null);
+    automatedMessageTimer?.cancel();
     super.dispose();
   }
 

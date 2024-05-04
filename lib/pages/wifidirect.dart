@@ -75,6 +75,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     clientSocket = null;
     clients.clear();
     _controller.dispose();
+    automatedMessageTimer?.cancel();
     super.dispose();
   }
 

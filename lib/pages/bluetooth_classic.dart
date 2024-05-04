@@ -65,6 +65,7 @@ class BluetoothClassicState extends State<BluetoothClassicPage> {
     _stopBluetoothClassic();
     _messageEventChannel.receiveBroadcastStream().listen(null);
     _connectionEventChannel.receiveBroadcastStream().listen(null);
+    automatedMessageTimer?.cancel();
     super.dispose();
   }
 

@@ -76,6 +76,7 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
     stopGattServer();
     updateTimer?.cancel();
+    automatedMessageTimer?.cancel();
     _controller.dispose();
 
     messageStream.receiveBroadcastStream().listen(null).cancel();
