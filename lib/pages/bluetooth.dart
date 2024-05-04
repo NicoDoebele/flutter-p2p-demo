@@ -54,6 +54,8 @@ class BluetoothPageState extends State<BluetoothPage> {
       pageOpenTime = DateTime.now();
     });
 
+    FlutterBluePlus.setLogLevel(LogLevel.verbose, color:false);
+
     super.initState();
     initiateBluetooth();
     // _getDataFromAllConnectedDevices();
@@ -140,7 +142,8 @@ class BluetoothPageState extends State<BluetoothPage> {
             await Future.delayed(const Duration(milliseconds: 50));
           }
 
-          result.device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
+          await result.device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
+          await result.device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
           
           setState(() {
             firstConnectionTime ??= DateTime.now();
