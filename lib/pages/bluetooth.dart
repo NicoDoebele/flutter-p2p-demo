@@ -100,11 +100,12 @@ class BluetoothPageState extends State<BluetoothPage> {
         Message fullMessage = Message.fromJson(jsonDecode(fullDataMessageString));
         //fullMessage.calculateDistanceBetweenLocations();
         newMessages.add(fullMessage);
+        newMessages.sort((a, b) => b.timeReceived!.compareTo(a.timeReceived!));
       }
     }
 
     setState(() {      
-      appData.addAll(newMessages);
+      appData.insertAll(0, newMessages);
     });
   }
 
@@ -305,7 +306,7 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   void addMessage(Message message) {
     setState(() {
-      appData.add(message);
+      appData.insert(0, message);
     });
 
     platform.invokeMethod('addMessage', {'message': message.toJson().toString()});

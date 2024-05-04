@@ -131,7 +131,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     }
 
     setState(() {
-      appData.add(message);
+      appData.insert(0, message);
     });
 
     _controller.clear();
@@ -152,7 +152,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
     Message fullDataMessage = Message.fromJson(jsonDecode(fixedMessageString));
 
     setState(() {
-      appData.add(fullDataMessage);
+      appData.insert(0, fullDataMessage);
     });
 
     // _sendMessageToSubscribers(message);

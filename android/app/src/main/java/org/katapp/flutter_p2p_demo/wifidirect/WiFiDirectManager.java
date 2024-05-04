@@ -358,9 +358,17 @@ public class WiFiDirectManager {
     };
 
     public void connectToFirstDevice() {
-        Log.d("WiFiDirectActivity", "Peers size: " + peers.size());
-        if (peers.size() > 0) {
-            connect(peers.get(peers.size() - 1));
+        List<WifiP2pDevice> filteredPeers = new ArrayList<>();
+        for (WifiP2pDevice device : peers) {
+            if (deviceMap.containsKey(device.deviceAddress)) {
+                filteredPeers.add(device);
+            }
+        }
+
+        Log.d("WiFiDirectActivity", "Connecting. Peers size: " + filteredPeers.size());
+
+        if (filteredPeers.size() > 0) {
+            connect(filteredPeers.get(filteredPeers.size() - 1));
         }
     }
 

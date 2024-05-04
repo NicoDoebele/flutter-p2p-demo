@@ -160,14 +160,14 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     Message message = Message.fromJson(jsonDecode(messageJsonString));
     //message.sentLocation = LocationManager.getCurrentLocation();
 
-    String newMessageJsonString = jsonEncode(message.toJson());
+    String newMessageJsonString = "${jsonEncode(message.toJson())}%";
 
     if (appData.contains(message)) {
       return;
     }
 
     setState(() {
-      appData.add(message);
+      appData.insert(0, message);
     });
 
     _controller.clear();
@@ -193,9 +193,10 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     //messageWithData.calculateDistanceBetweenLocations();
 
     setState(() {
-      appData.add(messageWithData);
+      appData.insert(0, messageWithData);
     });
 
+    /*
     if (isGroupOwner && isConnected) {
       for (final client in clients) {
         client.write(jsonEncode(messageWithData.toJson()));
@@ -203,6 +204,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
     } else if (isConnected) {
       clientSocket?.write(jsonEncode(messageWithData.toJson()));
     }
+    */
   }
 
   void _startServerSocket() async {
@@ -226,16 +228,25 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
       print(
           'Data from ${client.remoteAddress.address}:${client.remotePort} - $messageJsonString');
       
-      try {
-        final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
-        _addMessage(message);
+      // if message ends with % then its full message
+      if (messageJsonString.endsWith('%')) {
+        String fullMessage = previousData + messageJsonString.substring(0, messageJsonString.length - 1);
+        // split message on % and get all messages
+        List<String> messages = fullMessage.split('%');
         previousData = '';
-      } catch (e) {
-        print('Error: $e');
+
+        // loop through all messages and add them
+        for (String singleMessage in messages) {
+          try {
+            final message = Message.fromJson(jsonDecode(singleMessage));
+            _addMessage(message);
+          } catch (e) {
+            print('Error: $e');
+          }
+        }
+      } else {
         previousData += messageJsonString;
       }
-
-
     }, onDone: () {
       clients.remove(client);
       print(
@@ -253,15 +264,26 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
         final messageJsonString = utf8.decode(data);
         print('Data from ${clientSocket?.remoteAddress.address}:${clientSocket?.port} - $messageJsonString');
 
-        try {
-          final message = Message.fromJson(jsonDecode(previousData + messageJsonString));
-          _addMessage(message);
+        // if message ends with % then its full message
+        if (messageJsonString.endsWith('%')) {
+          String fullMessage = previousData + messageJsonString.substring(0, messageJsonString.length - 1);
+          // split message on % and get all messages
+          List<String> messages = fullMessage.split('%');
           previousData = '';
-        } catch (e) {
-          print('Error: $e');
+
+          // loop through all messages and add them
+          for (String singleMessage in messages) {
+            try {
+              final message = Message.fromJson(jsonDecode(singleMessage));
+              _addMessage(message);
+            } catch (e) {
+              print('Error: $e');
+            }
+          }
+        } else {
           previousData += messageJsonString;
         }
-      });
+        });
     } catch (e) {
       print('Error: $e');
     }

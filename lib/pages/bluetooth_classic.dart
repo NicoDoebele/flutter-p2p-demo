@@ -131,7 +131,7 @@ class BluetoothClassicState extends State<BluetoothClassicPage> {
     }
 
     setState(() {
-      appData.add(message);
+      appData.insert(0, message);
     });
 
     _controller.clear();
@@ -152,7 +152,7 @@ class BluetoothClassicState extends State<BluetoothClassicPage> {
     Message fullDataMessage = Message.fromJson(jsonDecode(fixedMessageString));
 
     setState(() {
-      appData.add(fullDataMessage);
+      appData.insert(0, fullDataMessage);
     });
 
     // _sendMessageToSubscribers(message);
