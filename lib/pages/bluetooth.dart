@@ -54,7 +54,7 @@ class BluetoothPageState extends State<BluetoothPage> {
   bool automatedMessages = false;
   Timer? automatedMessageTimer;
 
-  CustomPhy currentPhy = CustomPhy.le2m;
+  CustomPhy currentPhy = CustomPhy.le1m;
 
   @override
   void initState() {
@@ -266,7 +266,7 @@ class BluetoothPageState extends State<BluetoothPage> {
       int chunk = characteristic.device.mtuNow - 5; // 3 + 2 bytes ble overhead
       for (int i = 0; i < value.length; i += chunk) {
         List<int> subvalue = value.sublist(i, min(i + chunk, value.length));
-        characteristic.write(subvalue, withoutResponse: true, timeout: timeout);
+        await characteristic.write(subvalue, withoutResponse: true, timeout: timeout);
       }
       Future.delayed(const Duration(milliseconds: 100), () {
         _sendSplitWriteQueue(characteristic);
@@ -443,7 +443,8 @@ class BluetoothPageState extends State<BluetoothPage> {
         newPhy = CustomPhy.le2m;
         break;
       case CustomPhy.le2m:
-        newPhy = CustomPhy.leCodedS2;
+        newPhy = CustomPhy.le1m;
+        //newPhy = CustomPhy.leCodedS2;
         break;
       case CustomPhy.leCodedS2:
         newPhy = CustomPhy.leCodedS8;
