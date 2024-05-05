@@ -54,7 +54,7 @@ class BluetoothPageState extends State<BluetoothPage> {
   bool automatedMessages = false;
   Timer? automatedMessageTimer;
 
-  CustomPhy currentPhy = CustomPhy.le1m;
+  CustomPhy currentPhy = CustomPhy.le2m;
 
   @override
   void initState() {
@@ -154,6 +154,8 @@ class BluetoothPageState extends State<BluetoothPage> {
           while (!result.device.isConnected) {
             await Future.delayed(const Duration(milliseconds: 50));
           }
+
+          print('Setting PHY for device ${result.device.remoteId} to $currentPhy');
 
           switch (currentPhy) {
             case CustomPhy.le1m:
@@ -433,7 +435,7 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-  void _changePhy() {
+  void _changePhy() async {
     CustomPhy newPhy;
 
     switch (currentPhy) {
@@ -452,18 +454,19 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
 
     for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+      print('Setting PHY for device ${device.remoteId} to $newPhy');
       switch (newPhy) {
         case CustomPhy.le1m:
-          device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
+          await device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
           break;
         case CustomPhy.le2m:
-          device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
+          await device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
           break;
         case CustomPhy.leCodedS2:
-          device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s2);
+          await device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s2);
           break;
         case CustomPhy.leCodedS8:
-          device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s8);
+          await device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s8);
           break;
       }
     }
