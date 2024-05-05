@@ -47,6 +47,8 @@ class BluetoothPageState extends State<BluetoothPage> {
   bool automatedMessages = false;
   Timer? automatedMessageTimer;
 
+  String currentPhy = "LE1M";
+
   @override
   void initState() {
     
@@ -142,8 +144,13 @@ class BluetoothPageState extends State<BluetoothPage> {
             await Future.delayed(const Duration(milliseconds: 50));
           }
 
+          if (currentPhy == "LE2M") {
+            await result.device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
+          } else {
+            await result.device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
+          }
+
           await result.device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
-          await result.device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
           
           setState(() {
             firstConnectionTime ??= DateTime.now();
@@ -406,6 +413,26 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
+  void _togglePhy() {
+    if (currentPhy == "LE1M") {
+      for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+        device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
+      }
+
+      setState(() {
+        currentPhy = "LE2M";
+      });
+    } else {
+      for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+        device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
+      }
+
+      setState(() {
+        currentPhy = "LE1M";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -425,6 +452,13 @@ class BluetoothPageState extends State<BluetoothPage> {
               color: locationEnabled ? Colors.green : Colors.red,  // Change color based on condition
             ),
             onPressed: _toggleLocation,
+          ),
+          IconButton(
+            icon: Icon(
+              currentPhy == "LE1M" ? Icons.looks_one : Icons.looks_two,
+              color: currentPhy == "LE1M" ? Colors.lightBlue : Colors.blue,  // Change color based on condition
+            ),
+            onPressed: _togglePhy,
           ),
         ],
       ),
