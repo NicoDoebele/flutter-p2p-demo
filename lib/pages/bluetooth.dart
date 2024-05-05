@@ -11,6 +11,13 @@ import 'package:permission_handler/permission_handler.dart';
 // import location manager
 import 'package:flutter_p2p_demo/classes/location_manager.dart';
 
+enum CustomPhy {
+  le1m,
+  le2m,
+  leCodedS2,
+  leCodedS8
+}
+
 class BluetoothPage extends StatefulWidget {
   const BluetoothPage({super.key});
 
@@ -47,7 +54,7 @@ class BluetoothPageState extends State<BluetoothPage> {
   bool automatedMessages = false;
   Timer? automatedMessageTimer;
 
-  String currentPhy = "LE1M";
+  CustomPhy currentPhy = CustomPhy.le1m;
 
   @override
   void initState() {
@@ -57,6 +64,10 @@ class BluetoothPageState extends State<BluetoothPage> {
     });
 
     FlutterBluePlus.setLogLevel(LogLevel.verbose, color:false);
+
+    FlutterBluePlus.getPhySupport().then((value) {
+      print('Phy support: $value');
+    });
 
     super.initState();
     initiateBluetooth();
@@ -144,10 +155,19 @@ class BluetoothPageState extends State<BluetoothPage> {
             await Future.delayed(const Duration(milliseconds: 50));
           }
 
-          if (currentPhy == "LE2M") {
-            await result.device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
-          } else {
-            await result.device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
+          switch (currentPhy) {
+            case CustomPhy.le1m:
+              await result.device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
+              break;
+            case CustomPhy.le2m:
+              await result.device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
+              break;
+            case CustomPhy.leCodedS2:
+              await result.device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s2);
+              break;
+            case CustomPhy.leCodedS8:
+              await result.device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s8);
+              break;
           }
 
           await result.device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
@@ -413,23 +433,73 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
-  void _togglePhy() {
-    if (currentPhy == "LE1M") {
-      for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
-        device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
-      }
+  void _changePhy() {
+    CustomPhy newPhy;
 
-      setState(() {
-        currentPhy = "LE2M";
-      });
-    } else {
-      for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
-        device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
-      }
+    switch (currentPhy) {
+      case CustomPhy.le1m:
+        newPhy = CustomPhy.le2m;
+        break;
+      case CustomPhy.le2m:
+        newPhy = CustomPhy.leCodedS2;
+        break;
+      case CustomPhy.leCodedS2:
+        newPhy = CustomPhy.leCodedS8;
+        break;
+      case CustomPhy.leCodedS8:
+        newPhy = CustomPhy.le1m;
+        break;
+    }
 
-      setState(() {
-        currentPhy = "LE1M";
-      });
+    for (BluetoothDevice device in FlutterBluePlus.connectedDevices) {
+      switch (newPhy) {
+        case CustomPhy.le1m:
+          device.setPreferredPhy(txPhy: Phy.le1m.mask, rxPhy: Phy.le1m.mask, option: PhyCoding.s2);
+          break;
+        case CustomPhy.le2m:
+          device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.s2);
+          break;
+        case CustomPhy.leCodedS2:
+          device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s2);
+          break;
+        case CustomPhy.leCodedS8:
+          device.setPreferredPhy(txPhy: Phy.leCoded.mask, rxPhy: Phy.leCoded.mask, option: PhyCoding.s8);
+          break;
+      }
+    }
+
+    setState(() {
+      currentPhy = newPhy;
+    });
+  }
+
+  IconData _getIconData(CustomPhy phy) {
+    switch (phy) {
+      case CustomPhy.le1m:
+        return Icons.looks_one;  // Icon for le1m
+      case CustomPhy.le2m:
+        return Icons.looks_two;  // Icon for le2m
+      case CustomPhy.leCodedS2:
+        return Icons.filter_2;  // Different icon for leCodedS2
+      case CustomPhy.leCodedS8:
+        return Icons.filter_8;  // Different icon for leCodedS8
+      default:
+        return Icons.error;  // Fallback icon
+    }
+  }
+
+  Color _getColor(CustomPhy phy) {
+    switch (phy) {
+      case CustomPhy.le1m:
+        return Colors.blue;
+      case CustomPhy.le2m:
+        return Colors.blue[800]!;
+      case CustomPhy.leCodedS2:
+        return Colors.lightBlueAccent[400]!;
+      case CustomPhy.leCodedS8:
+        return Colors.lightBlueAccent[100]!; 
+      default:
+        return Colors.grey;  // Fallback color
     }
   }
 
@@ -455,10 +525,10 @@ class BluetoothPageState extends State<BluetoothPage> {
           ),
           IconButton(
             icon: Icon(
-              currentPhy == "LE1M" ? Icons.looks_one : Icons.looks_two,
-              color: currentPhy == "LE1M" ? Colors.lightBlue : Colors.blue,  // Change color based on condition
+              _getIconData(currentPhy),
+              color: _getColor(currentPhy),  // Change color based on condition
             ),
-            onPressed: _togglePhy,
+            onPressed: _changePhy,
           ),
         ],
       ),

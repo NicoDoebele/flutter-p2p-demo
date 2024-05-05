@@ -62,6 +62,10 @@ public class BleGattServerManager {
             return;
         }
 
+        System.out.println("Suported Modes:");
+        System.out.println("2M PHY: " + bluetoothAdapter.isLe2MPhySupported());
+        System.out.println("CODED PHY: " + bluetoothAdapter.isLeCodedPhySupported());
+
         gattServer = bluetoothManager.openGattServer(context, gattServerCallback);
         setupService();
         advertisingManager.startAdvertising();
