@@ -183,7 +183,7 @@ class BluetoothClassicState extends State<BluetoothClassicPage> {
 
     if (automatedMessages) {
       automatedMessageTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        _createMessage('0');
+        _createMessage(_controller.text);
       });
     } else {
       automatedMessageTimer?.cancel();
