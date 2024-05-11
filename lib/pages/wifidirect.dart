@@ -170,7 +170,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
       appData.insert(0, message);
     });
 
-    _controller.clear();
+    //_controller.clear();
 
     if (isGroupOwner && isConnected) {
       for (final client in clients) {

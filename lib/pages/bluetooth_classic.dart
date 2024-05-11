@@ -134,7 +134,7 @@ class BluetoothClassicState extends State<BluetoothClassicPage> {
       appData.insert(0, message);
     });
 
-    _controller.clear();
+    //_controller.clear();
 
     _sendMessage(message);
   }

@@ -134,7 +134,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
       appData.insert(0, message);
     });
 
-    _controller.clear();
+    //_controller.clear();
 
     _sendMessageToSubscribers(message);
   }

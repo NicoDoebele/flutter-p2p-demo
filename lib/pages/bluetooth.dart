@@ -315,7 +315,7 @@ class BluetoothPageState extends State<BluetoothPage> {
   }
 
   Future<void> createMessage(String sizeString) async {
-    _controller.clear();
+    //_controller.clear();
     int size;
 
     if (sizeString == '') {
