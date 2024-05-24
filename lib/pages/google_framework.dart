@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,7 +39,12 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
   Timer? automatedMessageTimer;
 
   List<String> connectedIds = [];
+  Map<String, String> deviceIdToDeviceName = {};
   String previousMessage = '';
+
+  String? randomDeviceName;
+
+  String connectionError = '';
 
   @override
   void initState() {
@@ -47,6 +53,8 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
     });
 
     super.initState();
+
+    randomDeviceName = 'P${Random().nextInt(1000)}${DateTime.now().millisecondsSinceEpoch.toString().substring(10)}';
 
     _init();
 
@@ -60,6 +68,10 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
     Nearby().stopAdvertising();
     Nearby().stopDiscovery();
     Nearby().stopAllEndpoints();
+    randomDeviceName = null;
+
+    connectedIds.clear();
+    deviceIdToDeviceName.clear();
     super.dispose();
   }
 
@@ -70,6 +82,22 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
     await Permission.bluetoothAdvertise.request();
     await Permission.bluetoothConnect.request();
     await Permission.bluetoothScan.request();
+
+    _startAdvertising();
+    _startDiscovering();
+  }
+
+  void _reset() {
+    connectedIds.clear();
+    deviceIdToDeviceName.clear();
+    setState(() {
+      connectionAmount = connectedIds.length;
+      firstConnectionTime = null;
+    });
+
+    Nearby().stopAdvertising();
+    Nearby().stopDiscovery();
+    Nearby().stopAllEndpoints();
 
     _startAdvertising();
     _startDiscovering();
@@ -105,7 +133,7 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
   Future<bool> _startAdvertising() async {
     try {
       bool success = await Nearby().startAdvertising(
-          Platform.localHostname,
+          "${randomDeviceName}_advertiser",
           Strategy.P2P_CLUSTER, // https://developers.google.com/nearby/connections/strategies
           onConnectionInitiated: (String id,ConnectionInfo info) {
             // Called whenever a discoverer requests connection
@@ -136,16 +164,14 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
     if (status == Status.CONNECTED) {
       print('Connection accepted: $id');
       connectedIds.add(id);
-      setState(() {
-        connectionAmount = connectedIds.length;
-        firstConnectionTime = DateTime.now();
-      });
     } else if (status == Status.REJECTED) {
       print('Connection rejected: $id');
-      setState(() {
-        connectionAmount = connectedIds.length;
-      });
+    } else if (status == Status.ERROR) {
+      print('Connection error: $id');
+      _reset();
     }
+
+    _removeBadConnections();
 
     print('Connected ids: $connectedIds');
   }
@@ -167,15 +193,54 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
 
   void _onConnectionInitiated(String id, ConnectionInfo info) {
     print('Connection initiated: $id ');
+
+    deviceIdToDeviceName[id] = info.endpointName;
+
     _acceptConnection(id);
 
     print('Connected ids: $connectedIds');
   }
 
+  void _removeBadConnections() {
+    // get all names of connected devices
+    List<String> connectedDeviceNames = connectedIds.map((id) => deviceIdToDeviceName[id]!).toList();
+
+    // get all isntances, where device names start with the same prefix before _ twice
+    List<String> badDeviceNames = connectedDeviceNames.where((name) => connectedDeviceNames.where((n) => n.startsWith(name.split('_')[0])).length > 1).toList();
+
+    // get all ids of bad devices
+    List<String> badDeviceIds = deviceIdToDeviceName.keys.where((id) => badDeviceNames.contains(deviceIdToDeviceName[id])).toList();
+
+    // remove all bad devices from connected ids
+    connectedIds.removeWhere((id) => badDeviceIds.contains(id));
+
+    // if bad devices were removed and and there are no more connections reset initial connect time
+    if (badDeviceIds.isNotEmpty && connectedIds.isEmpty) {
+      setState(() {
+        firstConnectionTime = null;
+      });
+    }
+
+    if (connectedIds.isNotEmpty) {
+      setState(() {
+        firstConnectionTime ??= DateTime.now();
+      });
+    }
+
+    setState(() {
+      connectionAmount = connectedIds.length;
+    });
+
+    // remove all bad devices
+    badDeviceIds.forEach((id) {
+      Nearby().disconnectFromEndpoint(id);
+    });
+  }
+
   Future<bool> _startDiscovering() async {
     try {
       bool success = await Nearby().startDiscovery(
-          Platform.localHostname,
+          "${randomDeviceName}_discoverer",
           Strategy.P2P_CLUSTER, // https://developers.google.com/nearby/connections/strategies
           onEndpointFound: (String id,String userName, String serviceId) {
             // called when an advertiser is found
@@ -205,6 +270,14 @@ class GoogleFrameworkPageState extends State<GoogleFrameworkPage> {
     // callbacks are similar to those in startAdvertising method
 
     if (connectedIds.contains(endpointId)) {
+      return;
+    }
+
+    print('Requesting connection to $userNickName with endpoint $endpointId');
+    print("Device name: $randomDeviceName");
+
+    // if device name in userNickName, don't connect
+    if (userNickName.contains(randomDeviceName!)) {
       return;
     }
 
