@@ -252,6 +252,44 @@ public class MainActivity extends FlutterActivity {
                     }
                 });
 
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
+                "org.katapp.flutter_p2p_demo.googleframework/controller")
+                .setMethodCallHandler((call, result) -> {
+                    switch (call.method) {
+                        case "createMessage":
+                            Integer size = call.argument("size");
+
+                            new Thread(() -> {
+                                Message createMessage = new Message(size);
+                                createMessage.setSentLocationAsCurrent();
+                                createMessage.setTimeSentAsCurrent();
+
+                                result.success(createMessage.toJson().toString());
+                            }).start();
+                            break;
+                        case "addDataToReceivedMessage":
+                            String messageString = call.argument("message");
+                            Message message = new Message(messageString);
+
+                            new Thread(() -> {
+                                message.setTimeReceivedAsCurrent();
+                                message.setReceivedLocationAsCurrent();
+
+                                result.success(message.toJson().toString());
+                            }).start();
+                            break;
+                        case "isLocationEnabled":
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        case "toggleLocationEnabled":
+                            LocationManager.setLocationEnabled(!LocationManager.isLocationEnabled());
+                            result.success(LocationManager.isLocationEnabled());
+                            break;
+                        default:
+                            result.notImplemented();
+                    }
+                });
+
         new EventChannel(flutterEngine.getDartExecutor().getBinaryMessenger(),
                 "org.katapp.flutter_p2p_demo.bluetooth_classic/connection")
                 .setStreamHandler(new EventChannel.StreamHandler() {

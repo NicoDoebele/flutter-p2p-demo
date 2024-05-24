@@ -194,7 +194,7 @@ class WiFiAwarePageState extends State<WiFiAwarePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wi-Fi Aware Page'),
+        title: const Text('Wi-Fi Aware'),
         actions: <Widget>[
           IconButton(
             icon: Icon(

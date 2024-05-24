@@ -33,6 +33,7 @@ dependencies:
   flutter_blue_plus: ^1.32.4
   permission_handler: ^11.3.1
   geolocator: ^11.0.0
+  nearby_connections: ^4.1.1
 
 
   # The following adds the Cupertino Icons font to your application.

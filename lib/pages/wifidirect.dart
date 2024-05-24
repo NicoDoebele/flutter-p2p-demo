@@ -325,7 +325,7 @@ class WiFiDirectPageState extends State<WiFiDirectPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wi-Fi Direct Page'),
+        title: const Text('Wi-Fi Direct'),
         actions: <Widget>[
           IconButton(
             icon: Icon(

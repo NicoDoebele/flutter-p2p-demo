@@ -194,7 +194,7 @@ class BluetoothClassicState extends State<BluetoothClassicPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bluetooth Classic Page'),
+        title: const Text('Bluetooth Classic'),
         actions: <Widget>[
           IconButton(
             icon: Icon(

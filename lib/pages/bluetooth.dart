@@ -511,7 +511,7 @@ class BluetoothPageState extends State<BluetoothPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bluetooth Page'),
+        title: const Text('Bluetooth LE'),
         actions: <Widget>[
           IconButton(
             icon: Icon(

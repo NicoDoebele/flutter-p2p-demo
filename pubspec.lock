@@ -208,6 +208,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.11.0"
+  nearby_connections:
+    dependency: "direct main"
+    description:
+      name: nearby_connections
+      sha256: e6845538b7389a0bd489faaf4f59a0a1564ddbe72a1eb4083e3780e496b67375
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.1"
   path:
     dependency: transitive
     description:
