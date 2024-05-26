@@ -56,6 +56,8 @@ class BluetoothPageState extends State<BluetoothPage> {
 
   CustomPhy currentPhy = CustomPhy.le1m;
 
+  bool showStatistics = false;
+
   @override
   void initState() {
     
@@ -507,6 +509,12 @@ class BluetoothPageState extends State<BluetoothPage> {
     }
   }
 
+  void _toggleStatistics() {
+    setState(() {
+      showStatistics = !showStatistics;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -529,6 +537,13 @@ class BluetoothPageState extends State<BluetoothPage> {
           ),
           IconButton(
             icon: Icon(
+              Icons.show_chart,
+              color: showStatistics ? Colors.green : Colors.red,  // Change color based on condition
+            ),
+            onPressed: _toggleStatistics,
+          ),
+          IconButton(
+            icon: Icon(
               _getIconData(currentPhy),
               color: _getColor(currentPhy),  // Change color based on condition
             ),
@@ -546,38 +561,13 @@ class BluetoothPageState extends State<BluetoothPage> {
               children: [
                 Text('Active Connections: $activeConnections'),
                 Text(firstConnectionTime != null ? "Connection Time: ${firstConnectionTime?.difference(pageOpenTime!).inSeconds} seconds" : "No connections yet"),
+                Text('Recieved: ${appData.where((message) => message.timeReceived != null).length} | Sent: ${appData.where((message) => message.timeReceived == null).length}'),
               ],
             ),
           ),
           // Displaying messages from "data"
           Expanded(
-            child: ListView.builder(
-              itemCount: appData.length,
-              itemBuilder: (context, index) {
-                final message = appData[index];
-                // Calculating the difference in time between timeSent and timeReceived, if both are available
-                String timeInfo;
-
-                String jsonString = message.toJson().toString();
-                List<int> jsonBytes = utf8.encode(jsonString);
-                int sizeInBytes = jsonBytes.length;
-
-                if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != 0) {
-                  final duration = message.timeReceived!.difference(message.timeSent!);
-                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} away';
-                }else if (message.timeSent != null && message.timeReceived != null) {
-                  final duration = message.timeReceived!.difference(message.timeSent!);
-                  timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
-                } else {
-                  timeInfo = 'Sent from this device';
-                }
-
-                return ListTile(
-                  title: Text('${message.sender} :: ${message.id}'),
-                  subtitle: Text(timeInfo),
-                );
-              },
-            ),
+            child: showStatistics ? _buildStatistics() : _buildMessages(),
           ),
           // Input and Send button
           Padding(
@@ -608,6 +598,58 @@ class BluetoothPageState extends State<BluetoothPage> {
           ),
         ],
       ),
+    );
+  }
+
+  ListView _buildStatistics() {
+    final List<Message> receivedMessages = appData.where((message) => message.timeReceived != null).toList();
+
+    // count by timeReceived - timeSent in seconds, display how many messages for each second
+    final Map<int, int> messagesPerSecond = {};
+    for (final message in receivedMessages) {
+      final seconds = message.timeReceived!.difference(message.timeSent!).inSeconds;
+      messagesPerSecond[seconds] = (messagesPerSecond[seconds] ?? 0) + 1;
+    }
+
+    return ListView.builder(
+      itemCount: messagesPerSecond.length,
+      itemBuilder: (context, index) {
+        final seconds = messagesPerSecond.keys.elementAt(index);
+        final count = messagesPerSecond.values.elementAt(index);
+        return ListTile(
+          title: Text('$count messages received in $seconds seconds'),
+        );
+      },
+    );
+  }
+
+  ListView _buildMessages() {
+    return ListView.builder(
+      itemCount: appData.length,
+      itemBuilder: (context, index) {
+        final message = appData[index];
+        // Calculating the difference in time between timeSent and timeReceived, if both are available
+        String timeInfo;
+
+        String jsonString = message.toJson().toString();
+        List<int> jsonBytes = utf8.encode(jsonString);
+        int sizeInBytes = jsonBytes.length;
+
+        if (message.timeSent != null && message.timeReceived != null && message.distanceBetweenLocations != 0) {
+          final duration = message.timeReceived!.difference(message.timeSent!);
+          timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds from ${message.distanceBetweenLocations!.toStringAsFixed(2)} meters away';
+        }else if (message.timeSent != null && message.timeReceived != null) {
+          final duration = message.timeReceived!.difference(message.timeSent!);
+          timeInfo = '$sizeInBytes Bytes received in ${duration.inSeconds} seconds';
+        } else {
+          timeInfo = 'Sent from this device';
+        }
+
+        return ListTile(
+          title: Text('${message.sender} :: ${message.id}'),
+          subtitle: Text(timeInfo),
+        );
+      },
     );
   }
 }
