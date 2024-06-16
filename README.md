@@ -12,13 +12,17 @@ The splash screen of the application lets the user pick between the different te
 
 ![Technology Page](./documentation/static/BluetoothLePage.png)
 
-Bluetooth Low Energy was picked as the example page for a technology page". Here the user can see the active connections to other devices running the app, send messages of specific lengths to the other devices and see sent and received messages. Received messaged will display the amount of time it took to send the message. Sent and received messages will show the size of the message.
+Bluetooth Low Energy was picked as the example page for a technology page. Here the user can see the active connections to other devices running the app, send messages of specific lengths to the other devices and see sent and received messages. Received messaged will display the amount of time it took to send the message. Sent and received messages will show the size of the message.
 
 There are three buttons which the user can toggle at the top of the screen. The clock will automatically send a message to all connected devices every two seconds. The size of this message is determined by the input at the bottom of the page. The location button will enable distance estimation between the devices with GPS. This is achieved by attaching geolocation information to the message. Lastly there is a statistic symbol. This groups all received messages by the amount of time it took to receive them. For Bluetooth Low Energy it is additionally possible to choose between the LE 1M and LE 2M hardware layer for transfer with the button at the top right.
 
 The technology page is typicall built like this.
 
 ![Typical Technology Page Class Diagram](./documentation/static/diagrams/class/flutter.drawio.svg)
+
+The message class holds all relevant information for transfer between the devices. The Android location API was used to determine the location. The class is built like this.
+
+![Message Class Diagram](./documentation/static/diagrams/class/nachricht.drawio.svg)
 
 ### Wi-Fi Direct
 
@@ -44,6 +48,8 @@ In Bluetooth Classic, a Bluetooth socket is created at the Java level. The Bluet
 
 ![Bluetooth Classic Sequence Diagram](./documentation/static/diagrams/sequence/BluetoothClassicSequence.png)
 
+Each technology needed to be implemented differently. Here is an overview of each of the technologies.
+
 ### Bluetooth Low Energy
 
 Bluetooth LE requires a GATT server and a client. The server was realised on the Android layer. Here, a service is provided via a unique UUID, with which clients can connect. The server can receive messages from the clients. If a message is received on the Android layer, it is forwarded to Dart via an event channel. forwarded to Dart via an event channel. The client side was implemented directly in Flutter. The Flutter Blue Plus package was used for this. It can be scanned for devices that offer a service with the previously determined UUID. As soon as a device with a matching UUID is found, a connection to this device is established. The client can then send messages to the connected device. The client can be connected to several servers and the server can manage several clients at the same time.
@@ -57,9 +63,3 @@ For the client side of Bluetooth Low Energy, the Flutter plugin flutter blue plu
 ### Gooogle's Nearby Connections Framework
 
 In addition, Google's Nearby Connections Framework was implemented in the app. For this the Flutter plugin nearby connections was used. By using the plugin no further native code was required for the implementation. For the implementation of the framework, the guidelines on the plugin's website were followed. Since this guide on the specified website already describes the implementation in detail, detailed description is not provided here.
-
-## Message
-
-For the functionality of the app a message class was created. This carried the neccessary information to allow for the previously described functionality. The Android location API was used to determine the location.
-
-![Message Class Diagram](./documentation/static/diagrams/class/nachricht.drawio.svg)
