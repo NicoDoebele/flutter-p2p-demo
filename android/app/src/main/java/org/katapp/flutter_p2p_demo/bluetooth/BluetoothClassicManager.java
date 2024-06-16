@@ -26,7 +26,6 @@ public class BluetoothClassicManager {
     BluetoothManager bluetoothManager;
     BluetoothAdapter bluetoothAdapter;
     Context context;
-    BluetoothBroadcastReceiver bluetoothBroadcastReceiver;
 
     final String NAME = "KATAPP_BLUETOOTH_CLASSIC";
     final UUID BLUETOOTH_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
