@@ -21,7 +21,7 @@
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
 
     <application
-        android:label="flutter_p2p_demo"
+        android:label="Offline Connectivity"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
 
