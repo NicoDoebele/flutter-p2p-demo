@@ -1,0 +1,59 @@
+title Bluetooth Classic
+
+actor Person A
+participant Flutter A
+participant Native A
+
+participant Native B
+participant Flutter B
+actor Person B
+
+==Initiate Connection==
+
+parallel
+  Person A -> Flutter A: Visit Site
+parallel off
+
+parallel
+  Flutter A -> Native A: start()
+  Person B -> Flutter B: Visit Site
+parallel off
+
+parallel
+  Native A <-- Native A: acceptThread.start()
+  Flutter B -> Native B: start()
+parallel off
+
+parallel
+  Native A <-- Native A: getPairedDevices()
+  Native B --> Native B: acceptThread.start()
+parallel off
+
+parallel
+  Native B --> Native B: getPairedDevices()
+  note over Native A: No Devices Found
+parallel off
+
+Native B --> Native B: connectThread.start(Handy A)
+
+note over Native A, Native B: A Client Socket in the Connect Thread connects with\nthe Server Socket in the Accept Thread
+
+parallel 
+  Native A <-- Native A: manageBluetoothSocket()
+  Native B --> Native B: manageBluetoothSocket()
+parallel off
+
+parallel 
+  Native A <-- Native A: startReading()
+  Native B --> Native B: startReading()
+parallel off
+
+==Communication==
+
+Person B -> Flutter B: Send Message
+
+Flutter B -> Native B: createMessage()
+
+Native B -> Native A: sendMessage()
+
+Flutter A <- Native A: handleLongMessageRead()

@@ -1,0 +1,106 @@
+<mxfile host="app.diagrams.net" modified="2024-06-09T12:55:13.558Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0" etag="ja0LlNAWnk8-mOmD8XB_" version="24.5.2" type="device">
+  <diagram name="Page-1" id="9f46799a-70d6-7492-0946-bef42562c5a5">
+    <mxGraphModel dx="2074" dy="1057" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="78961159f06e98e8-17" value="BleGattServerManager" style="swimlane;html=1;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;swimlaneFillColor=#ffffff;rounded=0;shadow=0;comic=0;labelBackgroundColor=none;strokeWidth=1;fillColor=none;fontFamily=Verdana;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry width="440" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-21" value="+ Context: context" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="30" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-23" value="+ BluetoothManager: bluetoothManager" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="56" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-25" value="+ BluetoothAdapter: bluetoothAdapter" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="82" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-26" value="+ BluetoothGattServer: gattServer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="108" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-24" value="+ BleAdvertisingManager: advertisingManager" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="134" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-2" value="+ BluetoothGattCharacteristic: characteristic" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="160" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-1" value="+ BluetoothMessageListener: messageListener" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="186" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-3" value="+ String: priorData" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="212" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-4" value="+ Handler: mainHandler" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="238" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-5" value="+ List&amp;lt;Message&amp;gt;: messageList" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="264" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-6" value="+ List&amp;lt;BluetoothDevice&amp;gt;: subscribedDevices" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="290" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-7" value="+ UUID: SERVICE_UUID" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="316" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-8" value="+ UUID: CHARACTERISTIC_UUID" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="342" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-9" value="+ UUID: CCCD_UUID" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="368" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-15" value="+ BluetoothGattServerCallback: gattServerCallback" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="394" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-19" value="" style="line;html=1;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="420" width="440" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-20" value="+ BleGattServerManager(Context): BleGattServerManager" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="428" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="78961159f06e98e8-27" value="+ start(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="454" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-10" value="+ stop(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="480" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-11" value="+ setupService(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="506" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-12" value="+ updateMessageList(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="532" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-13" value="+ notifySubscribedDevices(Byte[]): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="558" width="440" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-14" value="+ handleMessageReceived(String): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="78961159f06e98e8-17" vertex="1">
+          <mxGeometry y="584" width="440" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-16" value="BleAdvertisingManager" style="swimlane;html=1;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;swimlaneFillColor=#ffffff;rounded=0;shadow=0;comic=0;labelBackgroundColor=none;strokeWidth=1;fillColor=none;fontFamily=Verdana;fontSize=16;" parent="1" vertex="1">
+          <mxGeometry x="487" y="180" width="340" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-17" value="+ BluetoothLeAdvertiser: bleAdvertiser" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="YlqKUVAotPIfEd3LgKmX-16" vertex="1">
+          <mxGeometry y="30" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-18" value="+ AdvertiseCallback: advertiseCallback" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="YlqKUVAotPIfEd3LgKmX-16" vertex="1">
+          <mxGeometry y="56" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-32" value="" style="line;html=1;strokeWidth=1;fillColor=none;align=left;verticalAlign=middle;spacingTop=-1;spacingLeft=3;spacingRight=3;rotatable=0;labelPosition=right;points=[];portConstraint=eastwest;fontSize=16;" parent="YlqKUVAotPIfEd3LgKmX-16" vertex="1">
+          <mxGeometry y="82" width="340" height="8" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-33" value="+ BleAdvertisingManager(Context): BleAdvertisingManager" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="YlqKUVAotPIfEd3LgKmX-16" vertex="1">
+          <mxGeometry y="90" width="340" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-34" value="+ startAdvertising(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="YlqKUVAotPIfEd3LgKmX-16" vertex="1">
+          <mxGeometry y="140" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-35" value="+ stopAdvertising(): void" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;whiteSpace=wrap;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=16;" parent="YlqKUVAotPIfEd3LgKmX-16" vertex="1">
+          <mxGeometry y="166" width="340" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="YlqKUVAotPIfEd3LgKmX-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=16;" parent="1" source="78961159f06e98e8-24" target="YlqKUVAotPIfEd3LgKmX-16" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

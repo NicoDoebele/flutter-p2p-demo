@@ -1,0 +1,70 @@
+title WiFi Aware
+
+actor Person A
+participant Flutter A
+participant Native A
+
+participant Native B
+participant Flutter B
+actor Person B
+
+==Initiate Connection==
+
+parallel
+  Person A -> Flutter A: Visit Site
+  Person B -> Flutter B: Visit Site
+parallel off
+
+parallel
+  Flutter A -> Native A: start()
+  Flutter B -> Native B: start()
+parallel off
+
+parallel
+  Native A <-- Native A: createSocket()
+  Native B --> Native B: createSocket()
+parallel off
+
+parallel
+  Native A <-- Native A: startPublishing()
+  Native B --> Native B: startPublishing()
+parallel off
+
+parallel
+  Native A <-- Native A: startSubscribing()
+  Native B --> Native B: startSubscribing()
+parallel off
+
+note over Native A: Phone A finds Service of Phone B
+
+Native A -> Native B: sendMessage("Session Request")
+
+Native A <- Native B: sendMessage("Session Accepted")
+
+Native A <-> Native B: requestNetwork()
+
+note over Native A, Native B: Both devices start a SocketServer
+
+parallel
+  Native A <-- Native A: connectToServer()
+  Native B --> Native B: connectToServer()
+parallel off
+
+note over Native A, Native B: Redundant connections are disconnected
+
+parallel 
+  Native A -> Flutter A: onConnectionChange()
+  Native B -> Flutter B: onConnectionChange()
+parallel off
+
+==Communication==
+
+Person B -> Flutter B: Send Message
+
+Flutter B -> Native B: createMessage()
+
+Native B -> Native A: sendDataToAllClients()
+
+Native A --> Native A: processMessages()
+
+Native A -> Flutter A: sendMessageToDart()

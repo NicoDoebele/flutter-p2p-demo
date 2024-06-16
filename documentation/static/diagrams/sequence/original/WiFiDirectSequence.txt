@@ -1,0 +1,68 @@
+title WiFi Direct
+
+actor Person A
+participant Flutter A
+participant Native A
+
+participant Native B
+participant Flutter B
+actor Person B
+
+parallel
+  Person A -> Flutter A: Visit Site
+  Person B -> Flutter B: Visit Site
+parallel off
+
+parallel
+  Flutter A -> Native A: start()
+  Flutter B -> Native B: start()
+parallel off
+
+parallel
+  Native A <-- Native A: registerService()
+  Native B --> Native B: registerService()
+parallel off
+
+parallel
+  Native A <-- Native A: setupServiceDiscovery()
+  Native B --> Native B: setupServiceDiscovery()
+parallel off
+
+parallel
+  Native A <-- Native A: discoverPeers()
+  Native B --> Native B: discoverPeers()
+parallel off
+
+parallel
+  Native A <-- Native A: discoverServices()
+  Native B --> Native B: discoverServices()
+parallel off
+
+note over Native A: Phone A finds Service of Phone B
+
+Native A <-- Native A: connectToFirstDevice()
+
+Native A -> Native B: connect()
+
+note over Native B: Phone B gets notified by Phone A
+
+note over Native A, Native B: Group starts getting formed
+
+parallel
+  note over Native A: Gets picked as host
+  note over Native B: Gets picked as client
+parallel off
+
+note over Native A, Native B: Network group has been formed
+
+parallel 
+  Native A -> Flutter A: onConnectionInfoAvailable()
+  Native B -> Flutter B: onConnectionInfoAvailable()
+parallel off
+
+parallel 
+  note over Flutter A: Phone A starts a ServerSocket
+  note over Flutter B: Phone B connects to the ServerSocket of Phone A
+parallel off
+
+note over Person A, Person B: The communication between the phones is done through sockets in Flutter

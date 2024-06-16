@@ -1,0 +1,52 @@
+title Bluetooth Low Energy
+
+actor Person A
+participant Flutter A
+participant Native A
+
+participant Native B
+participant Flutter B
+actor Person B
+
+==Initiate Connections==
+
+parallel
+  Person A -> Flutter A: Visit Site
+  Person B -> Flutter B: Visit Site
+parallel off
+
+parallel
+  Flutter A <-- Flutter A: initiateBluetooth()
+  Flutter B --> Flutter B: initiateBluetooth()
+parallel off
+
+parallel
+  Flutter A -> Native A: startGattServer()
+  Flutter B -> Native B: startGattServer()
+parallel off
+
+parallel
+  Native A <-- Native A: setupService()
+  Native B --> Native B: setupService()
+parallel off
+
+parallel
+  Native A <-- Native A: advertisingManager.startAdvertising()
+  Native B --> Native B: advertisingManager.startAdvertising()
+parallel off
+
+==Communication==
+
+Person B -> Flutter B: Send Message
+
+Flutter B <-> Native B: createMessage()
+
+Flutter B --> Flutter B: sendDataToAllDevices()
+
+Flutter B -> Native A: splitWrite()
+
+Native A --> Native A: handleMessageReceived()
+
+Native A -> Flutter A: updateMessageList()
+
+Flutter A --> Flutter A: onMessageListUpdate()
