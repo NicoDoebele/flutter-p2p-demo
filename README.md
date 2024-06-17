@@ -1,24 +1,24 @@
 # flutter-p2p-demo
 
-This prototype was created as part of a bachelor thesis. The purpose of this app was to test the kriteria of existing technologies which enable offline data transfer. The app is split into two parts.
+This prototype was created as part of a bachelor thesis. The purpose of this app was to test the kriteria of existing protocols which enable offline data transfer. The app is split into two parts.
 
 ## Splash screen
 
 ![Splash Screen](./documentation/static/Main.png)
 
-The splash screen of the application lets the user pick between the different technologies to test. Each of the buttons directs the user to what will be reffered to as a "technology page" from now on.
+The splash screen of the application lets the user pick between the different protocols to test. Each of the buttons directs the user to what will be reffered to as a "protocol page" from now on.
 
-## Technology page
+## Protocol page
 
-![Technology Page](./documentation/static/BluetoothLePage.png)
+![Protocol Page](./documentation/static/BluetoothLePage.png)
 
-Bluetooth Low Energy was picked as the example page for a technology page. Here the user can see the active connections to other devices running the app, send messages of specific lengths to the other devices and see sent and received messages. Received messaged will display the amount of time it took to send the message. Sent and received messages will show the size of the message.
+Bluetooth Low Energy was picked as the example page for a protocol page. Here the user can see the active connections to other devices running the app, send messages of specific lengths to the other devices and see sent and received messages. Received messaged will display the amount of time it took to send the message. Sent and received messages will show the size of the message.
 
 There are three buttons which the user can toggle at the top of the screen. The clock will automatically send a message to all connected devices every two seconds. The size of this message is determined by the input at the bottom of the page. The location button will enable distance estimation between the devices with GPS. This is achieved by attaching geolocation information to the message. Lastly there is a statistic symbol. This groups all received messages by the amount of time it took to receive them. For Bluetooth Low Energy it is additionally possible to choose between the LE 1M and LE 2M hardware layer for transfer with the button at the top right.
 
-The technology page is typicall built like this.
+The protocol page is typicall built like this.
 
-![Typical Technology Page Class Diagram](./documentation/static/diagrams/class/flutter.drawio.svg)
+![Typical Protocol Page Class Diagram](./documentation/static/diagrams/class/flutter.drawio.svg)
 
 The message class holds all relevant information for transfer between the devices. The Android location API was used to determine the location. The class is built like this.
 
@@ -48,7 +48,7 @@ In Bluetooth Classic, a Bluetooth socket is created at the Java level. The Bluet
 
 ![Bluetooth Classic Sequence Diagram](./documentation/static/diagrams/sequence/BluetoothClassicSequence.png)
 
-Each technology needed to be implemented differently. Here is an overview of each of the technologies.
+Each Protocol needed to be implemented differently. Here is an overview of each of the technologies.
 
 ### Bluetooth Low Energy
 
